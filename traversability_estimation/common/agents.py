@@ -19,35 +19,37 @@ from hgext.histedit import action
 dirname = os.path.dirname(__file__)
 import sys
 sys.path.append(os.path.join(dirname, 'common'))
-from model import ActorCritic, ICMModel
+from model import FeatureNetwork, ActorCritic, ICMModel
 
 class Agent():
     def __init__(self,state_size_map, state_size_depth , state_size_goal, num_outputs, hidden_size, stack_size, load_model, MODELPATH, learning_rate, mini_batch_size, worker_number, lr_decay_epoch, init_lr, eta = 0.01):
         self.eta = eta
         self.lr_decay_epoch = lr_decay_epoch
         self.init_lr = init_lr
+        self.final_lr = 1e-5
         self.mini_batch_size = mini_batch_size
         self.worker_number = worker_number
         use_cuda = torch.cuda.is_available()
         self.device   = torch.device("cuda" if use_cuda else "cpu")
         torch.cuda.empty_cache()
         self.summary_writer = tf.summary.FileWriter("train_getjag/ppo/Tensorboard")
-        self.ac_model = ActorCritic(state_size_map*stack_size, state_size_depth * stack_size, state_size_goal * stack_size , num_outputs, hidden_size, stack_size).to(self.device)
-        self.icm_model = ICMModel(state_size_map*stack_size, state_size_depth * stack_size, state_size_goal * stack_size , num_outputs, hidden_size, stack_size).to(self.device)
+        self.feature_net = FeatureNetwork(state_size_map*4, state_size_depth * stack_size, state_size_goal * 4 , hidden_size, stack_size).to(self.device)
+
+        self.ac_model = ActorCritic(num_outputs, hidden_size).to(self.device)
+        self.icm_model = ICMModel(num_outputs, hidden_size).to(self.device)
 
         if(load_model):
+            self.feature_net.load_state_dict(torch.load(MODELPATH + '/save_ppo_feature_net.dat'))
             self.ac_model.load_state_dict(torch.load(MODELPATH + '/save_ppo_ac_model.dat'))
             self.icm_model.load_state_dict(torch.load(MODELPATH + '/save_ppo_icm_model.dat'))
         else:
+            self.feature_net.apply(self.feature_net.init_weights)
             self.ac_model.apply(self.ac_model.init_weights)
             self.icm_model.apply(self.icm_model.init_weights)
 
 
-        self.optimizer = optim.Adam(list(self.ac_model.parameters()) + list(self.icm_model.parameters()), lr=learning_rate)
+        self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()) + list(self.icm_model.parameters()), lr=learning_rate)
 
-    def compute_action(self, map_state, depth_state, goal_state, hidden_state_h, hidden_state_c):
-        dist, value, next_hidden_state_h, next_hidden_state_c = self.ac_model( map_state, depth_state, goal_state, hidden_state_h, hidden_state_c)
-        return dist, value, next_hidden_state_h, next_hidden_state_c
 
     def compute_gae(self, next_value, rewards, masks, values, gamma=0.99, tau=0.95):
         values = values + [next_value]
@@ -78,11 +80,15 @@ class Agent():
         sum_entropy = 0.0
         sum_loss_total = 0.0
 
-        lr = init_lr * (0.1**(epoch // self.lr_decay_epoch))
-        if(lr>=1e-5):
-         lr=1e-5
-        print('learning rate: ' + str(lr))
-        optimizer = optim.Adam(model.parameters(), lr=lr )
+        #lr = self.init_lr * (0.1**(epoch // self.lr_decay_epoch))
+
+        lr = self.init_lr - (self.init_lr - self.final_lr)*(1-math.exp(-epoch/self.lr_decay_epoch))
+        print('learning rate' + str(lr))
+        #if(lr>=1e-5):
+        # lr=1e-5
+       # print('learning rate: ' + str(lr))
+        self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()) + list(self.icm_model.parameters()), lr=lr)
+
 
 
         # Normalize the advantages
@@ -103,8 +109,13 @@ class Agent():
                  # --------------------------------------------------------------------------------
                 # for Curiosity-driven
 
-                real_next_state_feature, pred_next_state_feature, pred_action = self.icm_model(map_state, depth_state, goal_state, hidden_state_h, hidden_state_c, next_map_state, next_depth_state, next_goal_state, next_hidden_state_h, next_hidden_state_c, action)
+                real_state_feature, _, _ = self.feature_net(map_state, depth_state, goal_state, hidden_state_h, hidden_state_c)
+                real_next_state_feature, _, _ = self.feature_net(next_map_state, next_depth_state, next_goal_state, next_hidden_state_h, next_hidden_state_c)
 
+                pred_next_state_feature, pred_action = self.icm_model(real_state_feature, real_next_state_feature, action)
+
+                #print('action' + str(action.mean))
+                #print('pred_action' + str(pred_action.mean))
 
                 #inverse_loss = ce(pred_action, action.to(torch.long))
                 inverse_loss = forward_mse(pred_action, action.detach())
@@ -112,7 +123,8 @@ class Agent():
                 forward_loss = forward_mse(pred_next_state_feature, real_next_state_feature.detach())
                 # ---------------------------------------------------------------------------------
 
-                dist, value, hidden_state_h, hidden_state_c = self.ac_model( map_state, depth_state, goal_state,  hidden_state_h, hidden_state_c)
+                features, _, _ = self.feature_net(map_state, depth_state, goal_state, hidden_state_h, hidden_state_c)
+                dist, value, _ = self.ac_model(features)
 
                 vpredclipped = old_value + torch.clamp(value - old_value , - clip_param, clip_param)
 
@@ -160,17 +172,20 @@ class Agent():
         summary.value.add(tag='Perf/sum_entropy', simple_value=float(sum_entropy))
         self.summary_writer.add_summary(summary, frame_idx)
 
-    def compute_intrinsic_reward(self, map_state, depth_state, goal_state,hidden_state_h, hidden_state_c,
-                                  next_map_state, next_depth_state, next_goal_state, next_hidden_state_h, next_hidden_state_c, action):
+    def compute_intrinsic_reward(self, real_state_feature, real_next_state_feature, action):
 
         action_onehot = action
 #         action = action.to(torch.long)
 #         action_onehot = torch.FloatTensor(len(action),  action.size(1)).to(self.device)
 #         action_onehot.zero_()
 #         action_onehot.scatter_(1, action.view(len(action), -1), 1)
-        print(action)
-        real_next_state_feature, pred_next_state_feature, pred_action = self.icm_model(map_state, depth_state, goal_state, hidden_state_h, hidden_state_c, next_map_state, next_depth_state, next_goal_state, next_hidden_state_h, next_hidden_state_c, action_onehot)
-        print(real_next_state_feature)
-        print(pred_next_state_feature)
+
+
+        pred_next_state_feature, pred_action = self.icm_model(real_state_feature, real_next_state_feature, action)
+
+        print('action' + str(action))
+        print('pred_action' + str(pred_action))
+
+
         intrinsic_reward = self.eta * F.mse_loss(real_next_state_feature, pred_next_state_feature, reduction='none').mean(-1)
         return intrinsic_reward.data.cpu().numpy()

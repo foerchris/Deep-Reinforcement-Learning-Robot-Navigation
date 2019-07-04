@@ -51,8 +51,8 @@ class image_converter():
 
         if(action[0] >= 1.0):
             action[0] = 1.0
-        elif(action[0] <= 0.05):
-            action[0] = 0.05
+        elif(action[0] <= -1.0):
+            action[0] = -1.0
 
         if (action[1] >= 1.0):
             action[1] = 1.0

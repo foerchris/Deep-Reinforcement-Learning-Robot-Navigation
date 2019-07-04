@@ -79,7 +79,6 @@ num_outputs = envs.action_space.shape[0]
 
 stack_size = 1
 stack_size_depth = 4
-stack_size_goal = 4
 class image_stacker():
     def __init__(self, state_size, stack_size):
         self.stacked_frames = deque([np.zeros((state_size_map), dtype=np.float16) for i in range(stack_size)], maxlen=stack_size)
@@ -92,7 +91,7 @@ class image_stacker():
 
 stacked_map_frames = deque([np.zeros((num_envs,state_size_map/state_size_map,state_size_map/state_size_map), dtype=np.float16) for i in range(stack_size)], maxlen=stack_size)
 stacked_depth_frames = deque([np.zeros((num_envs,state_size_depth/state_size_depth,state_size_depth/state_size_depth), dtype=np.float16) for i in range(stack_size_depth)], maxlen=stack_size)
-stacked_goal_frames = deque([np.zeros((num_envs,state_size_goal), dtype=np.float16) for i in range(stack_size_goal)], maxlen=stack_size_goal)
+stacked_goal_frames = deque([np.zeros((num_envs,state_size_goal), dtype=np.float16) for i in range(stack_size)], maxlen=stack_size)
 
 
 def reset_single_frame(stacked_frames, state, stack_size, number):
@@ -146,14 +145,14 @@ def plot(frame_idx, rewards):
 #Hyper params:
 hidden_size      = 576
 lr               = 1e-4
-lr_decay_epoch   = 120.0
+lr_decay_epoch   = 60.0
 init_lr          = lr
 epoch            = 0.0
 
-max_num_steps    = 500
-num_steps        = 200
-mini_batch_size  = 8
-ppo_epochs       = 4
+max_num_steps    = 300
+num_steps        = 500
+mini_batch_size  = 10
+ppo_epochs       = 8
 GAMMA            = 0.99
 GAE_LAMBDA       = 0.95
 PPO_EPSILON      = 0.2
@@ -187,17 +186,16 @@ map_state,depth_state, goal_state = envs.reset()
 
 map_state, stacked_map_frames = stack_frames(stacked_map_frames, map_state, stack_size, True)
 depth_state, stacked_depth_frames = stack_frames(stacked_depth_frames, depth_state, stack_size_depth, True)
-goal_state, stacked_goal_frames = stack_frames(stacked_goal_frames, goal_state, stack_size_goal, True)
+goal_state, stacked_goal_frames = stack_frames(stacked_goal_frames, goal_state, stack_size, True)
 
-agent.feature_net.hidden = agent.feature_net.init_hidden(num_envs)
-(hidden_state_h, hidden_state_c) = agent.feature_net.hidden
+agent.ac_model.hidden = agent.ac_model.init_hidden(num_envs)
+(hidden_state_h, hidden_state_c) = agent.ac_model.hidden
 
 done_cache = []
 step_count = []
 total_reward = []
 total_total_reward = []
 total_step_count = []
-total_std = []
 for i in range(0, num_envs):
     done_cache.append(False)
     step_count.append(0)
@@ -217,7 +215,6 @@ while frame_idx < max_frames and not early_stop:
     masks = []
     entropy = 0
 
-    agent.feature_net.eval()
     agent.ac_model.eval()
     agent.icm_model.eval()
     total_reward_worker1 = []
@@ -232,23 +229,16 @@ while frame_idx < max_frames and not early_stop:
             depth_state = torch.FloatTensor(depth_state).to(device)
             goal_state = torch.FloatTensor(goal_state).to(device)
 
+            hidden_states_h.append(hidden_state_h)
+            hidden_states_c.append(hidden_state_c)
 
-
-            features, next_hidden_state_h, next_hidden_state_c = agent.feature_net(map_state, depth_state, goal_state, hidden_state_h, hidden_state_c)
-
-            dist, value, std  = agent.ac_model( features)
-
-            total_std.append(std.cpu().numpy())
-
-            #print(dist.stddev())
-            #
-            print(dist.entropy())
+            dist, value, next_hidden_state_h, next_hidden_state_c = agent.ac_model( map_state, depth_state, goal_state, hidden_state_h, hidden_state_c)
 
             action = dist.sample()
 
             # this is a x,1 tensor is kontains alle the possible actions
             # the cpu command move it from a gpu tensor to a cpu tensor
-            next_map_state, next_depth_state, next_goal_state, reward, done, _ = envs.step(action.cpu().numpy())
+            next_map_state, next_depth_state, next_goal_state, reward, done, _ = envs.step( action.cpu().numpy())
 
 
             for i in range(0, num_envs):
@@ -256,9 +246,9 @@ while frame_idx < max_frames and not early_stop:
                     _, stacked_map_frames = reset_single_frame(stacked_map_frames, next_map_state[i], stack_size, i)
                     _, stacked_depth_frames = reset_single_frame(stacked_depth_frames, next_depth_state[i], stack_size_depth,
                                                                  i)
-                    _, stacked_goal_frames = reset_single_frame(stacked_goal_frames, next_goal_state[i], stack_size_goal, i)
+                    _, stacked_goal_frames = reset_single_frame(stacked_goal_frames, next_goal_state[i], stack_size, i)
 
-                    (single_hidden_state_h, single_hidden_state_c) = agent.feature_net.init_hidden(1)
+                    (single_hidden_state_h, single_hidden_state_c) = agent.ac_model.init_hidden(1)
                     next_hidden_state_h[0][i] = single_hidden_state_h
                     next_hidden_state_c[0][i] = single_hidden_state_c
 
@@ -267,12 +257,12 @@ while frame_idx < max_frames and not early_stop:
 
             next_map_state, stacked_map_frames = stack_frames(stacked_map_frames,next_map_state,stack_size, False)
             next_depth_state, stacked_depth_frames = stack_frames(stacked_depth_frames,next_depth_state,stack_size_depth, False)
-            next_goal_state, stacked_goal_frames = stack_frames(stacked_goal_frames,next_goal_state,stack_size_goal, False)
-
-            next_features, _, _ = agent.feature_net(torch.FloatTensor(next_map_state).to(device), torch.FloatTensor(next_depth_state).to(device) , torch.FloatTensor(next_goal_state).to(device), next_hidden_state_h, next_hidden_state_h)
+            next_goal_state, stacked_goal_frames = stack_frames(stacked_goal_frames,next_goal_state,stack_size, False)
 
             # total reward = int reward
-            intrinsic_reward = agent.compute_intrinsic_reward(features, next_features, action)
+            intrinsic_reward = agent.compute_intrinsic_reward(map_state, depth_state, goal_state, hidden_state_h, hidden_state_c,
+                                                              torch.FloatTensor(next_map_state).to(device), torch.FloatTensor(next_depth_state).to(device), torch.FloatTensor(next_goal_state).to(device),
+                                                              next_hidden_state_h, next_hidden_state_c, action)
 
             reward +=  intrinsic_reward
             total_reward += reward
@@ -296,9 +286,6 @@ while frame_idx < max_frames and not early_stop:
             done = torch.FloatTensor(1 - done).unsqueeze(1).to(device)
             masks.append(done)
 
-            hidden_states_h.append(hidden_state_h)
-            hidden_states_c.append(hidden_state_c)
-
             map_states.append(map_state)
             depth_states.append(depth_state)
             goal_states.append(goal_state)
@@ -312,7 +299,7 @@ while frame_idx < max_frames and not early_stop:
             #torch.cuda.empty_cache()
             frame_idx += 1
 
-            if frame_idx % 2000 == 0:
+            if frame_idx % 1000 == 0:
                 #mean_test_rewards = []
                 #mean_test_lenghts = []
                 #mean_test_log_probs = []
@@ -333,8 +320,6 @@ while frame_idx < max_frames and not early_stop:
                 total_total_reward = []
                 mean_test_lenghts = np.mean(total_step_count)
                 total_step_count = []
-                mean_total_std = np.mean(total_std)
-                total_std = []
                 #mean_test_log_probs = np.mean(mean_test_log_probs)
                 #mean_test_values = np.mean(mean_test_values)
                 #mean_test_entropy = np.mean(mean_test_entropy)
@@ -345,26 +330,12 @@ while frame_idx < max_frames and not early_stop:
                 summary = tf.Summary()
                 summary.value.add(tag='Perf/mean_test_rewards', simple_value=float(mean_test_rewards))
                 summary.value.add(tag='Perf/mean_test_lenghts', simple_value=float(mean_test_lenghts))
-                summary.value.add(tag='Perf/mean_total_std', simple_value=float(mean_total_std))
-
                 #summary.value.add(tag='Perf/mean_test_log_probs', simple_value=float(mean_test_log_probs))
                 #summary.value.add(tag='Perf/mean_test_values', simple_value=float(mean_test_values))
                 #summary.value.add(tag='Perf/mean_test_entropy', simple_value=float(mean_test_entropy))
                 summary_writer.add_summary(summary, frame_idx)
 
-                for name, param in agent.feature_net.named_parameters():
-                    if param.requires_grad:
-                        tensor = param.data
-                        tensor = tensor.cpu().numpy()
-                        writer.add_histogram(name, tensor, bins='doane')
-
                 for name, param in agent.ac_model.named_parameters():
-                    if param.requires_grad:
-                        tensor = param.data
-                        tensor = tensor.cpu().numpy()
-                        writer.add_histogram(name, tensor, bins='doane')
-
-                for name, param in agent.icm_model.named_parameters():
                     if param.requires_grad:
                         tensor = param.data
                         tensor = tensor.cpu().numpy()
@@ -377,11 +348,10 @@ while frame_idx < max_frames and not early_stop:
                         print("Best reward updated: %.3f -> %.3f" % (best_reward, mean_test_rewards))
                         name = "%s_best_%+.3f_%d.dat" % ('ppo_robot_nav', mean_test_rewards, frame_idx)
                         #fname = os.path.join('.', 'checkpoints', name)
-                        #torch.save(agent.ac_model.state_dict(), MODELPATH + name)
+                        torch.save(agent.ac_model.state_dict(), MODELPATH + name)
                     best_reward = mean_test_rewards
 
                 if mean_test_rewards > threshold_reward: early_stop = True
-                torch.save(agent.feature_net.state_dict(), MODELPATH + '/save_ppo_feature_net.dat')
                 torch.save(agent.ac_model.state_dict(), MODELPATH + '/save_ppo_ac_model.dat')
                 torch.save(agent.icm_model.state_dict(), MODELPATH + '/save_ppo_icm_model.dat')
 
@@ -393,13 +363,11 @@ while frame_idx < max_frames and not early_stop:
             hidden_state_h = next_hidden_state_h
             hidden_state_c = next_hidden_state_c
 
-    agent.feature_net.train()
+
     agent.ac_model.train()
     agent.icm_model.train()
 
-    next_features, _, _= agent.feature_net(next_map_state, next_depth_state, next_goal_state, hidden_state_h, hidden_state_c)
-
-    _, next_value, _ = agent.ac_model(next_features)
+    _, next_value, hidden_state_h, hidden_state_c = agent.ac_model(next_map_state, next_depth_state, next_goal_state, hidden_state_h, hidden_state_c)
     returns = agent.compute_gae(next_value, rewards, masks, values, GAMMA, GAE_LAMBDA)
 
     returns = torch.cat(returns).detach()

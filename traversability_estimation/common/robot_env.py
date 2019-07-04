@@ -65,7 +65,8 @@ class robotEnv():
         self.action_space = gym.spaces.Box(low=-1, high=1, shape=(2,1), dtype = np.float16)
         self.total_reward = 0
         signal.signal(signal.SIGINT, self.signal_handler)
-
+        self.number_of_epsiodes = 0
+        self.number_reached_goal = 0
         self.me = "forpythontest2@gmail.com"
         self.my_password = r"rutWXjJkPItlmGwRYB9J"
         self.you = "chrf@notes.upb.de"
@@ -227,7 +228,7 @@ class robotEnv():
         self.lastTime = self.startTime
 
         sleep(0.2)
-
+        self.number_of_epsiodes += 1
         return self.get_state()
 
 
@@ -260,14 +261,14 @@ class robotEnv():
             EndEpisode = True
 
             rospy.set_param("/GETjag"+ str(self.number) + "/Error_in_simulator",False)
-#
-#         if currentdistance < self.closestDistance:
-#             reward = self.discountFactorMue*(self.closestDistance-currentdistance)/deltaTime
-#             self.closestDistance = currentdistance
-#
-#         elif currentdistance <= self.lastDistance:
-#             reward = 0.5 + (self.startGoalDistance / currentTime)
-#
+
+        if currentdistance < self.closestDistance:
+            reward = self.discountFactorMue*(self.closestDistance-currentdistance)/deltaTime
+            self.closestDistance = currentdistance
+
+        elif currentdistance <= self.lastDistance:
+            reward = 0.5 + (self.startGoalDistance / currentTime)
+
 #         explored = (eleviationImage > 100).sum()
 #         if (explored > self.explored_last):
 #             self.explored_last = explored
@@ -302,6 +303,7 @@ class robotEnv():
             text_file.close()
             print("reached Goal")
             EndEpisode = True
+            self.number_reached_goal
 
         if currentdistance <= 0.5:
             reward += 20
@@ -310,8 +312,8 @@ class robotEnv():
             EndEpisode = True
 
         #print("current reward: " + str(reward))
-        #reward = reward*0.01
         reward = reward*0.01
+        #reward = reward*0.001
         #if(self.number == 1):
             #print("reward for step: " + str(reward))
         self.lastDistance = currentdistance
@@ -337,6 +339,9 @@ class robotEnv():
     def returnRollPitchYaw(self, orientation):
         orientation_list = [orientation.x, orientation.y, orientation.z, orientation.w]
         return  euler_from_quaternion(orientation_list)
+
+    def return_times_reached_goal(self, start, goal):
+        return self.number_of_epsiodes, self.number_reached_goal
 
     def clcDistance(self, start, goal):
         distance = math.sqrt(pow((goal.x),2)+pow((goal.y),2))
