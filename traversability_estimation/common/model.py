@@ -214,7 +214,6 @@ class ActorCritic(nn.Module):
   #              torch.zeros(1, batch_size, self.hidden_dim, device=self.device))
 
     def forward(self, lstm_out):
-
         value = self.critic(lstm_out)
         #print('value' + str(value))
 

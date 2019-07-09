@@ -56,7 +56,7 @@ class robotEnv():
 
         self.observation_space = []
         self.observation_space.append(gym.spaces.Box(low=-1, high=1, shape=(24,24),dtype = np.float16))
-        self.observation_space.append(gym.spaces.Box(low=-1, high=1, shape=(3,1),dtype = np.float16))
+        self.observation_space.append(gym.spaces.Box(low=-1, high=1, shape=(7,1),dtype = np.float16))
 
         self.action_space = gym.spaces.Box(low=-1, high=1, shape=(2,1), dtype = np.float16)
         self.total_reward = 0
@@ -123,15 +123,18 @@ class robotEnv():
         # norrm input data between -1 and 1
         robotGroundMap =  np.divide(robotGroundMap, 255) #255
         currentOrientation = np.divide(currentOrientation,math.pi)
-        np.append(currentOrientation, self.flipperPoseFront.current_pos/m.pi)
-        np.append(currentOrientation, self.flipperPoseRear.current_pos/m.pi)
+        currentOrientation = np.append(currentOrientation, self.flipperPoseFront.current_pos/m.pi)
+        currentOrientation = np.append(currentOrientation, self.flipperPoseRear.current_pos/m.pi)
+        currentOrientation = np.append(currentOrientation, self.currentPose.twist.twist.linear.x)
+        currentOrientation = np.append(currentOrientation, self.currentPose.twist.twist.angular.z)
+
         print("currentOrientation" + str(currentOrientation))
         robotGroundMap = np.asarray(robotGroundMap, dtype=np.float16)
         currentOrientation = np.asarray(currentOrientation, dtype=np.float16)
 
         # replace nan values with 0
         robotGroundMap.reshape(1,24,24)
-        currentOrientation.reshape(1,5)
+        currentOrientation.reshape(1,7)
 
         return robotGroundMap, currentOrientation
 
@@ -173,11 +176,11 @@ class robotEnv():
                     print("worker_" + str(self.number) + " stucked at waiting for Ready_to_Start_DRL_agent");
                 sleep(0.2)
 
-            _, self.currentPose, self.goalPose = self.ic.returnData()
+            _, self.currentPose, self.goalPose, _, _ = self.ic.returnData()
             roll, pitch, yaw = self.returnRollPitchYaw(self.currentPose.pose.pose.orientation)
 
             position_q = self.currentPose.pose.pose.position
-            # cheakk if the roboter is in a valide starting position
+            # cheakk if the roboter is in a valide starting positionv
             if roll <= math.pi/4 and roll >= -math.pi/4 and pitch <= math.pi/4 and pitch >= -math.pi/4 and position_q.z <0.7:
                 valiedEnv = True
                 sleep(0.2)
@@ -198,7 +201,7 @@ class robotEnv():
 
 
     def clcReward(self):
-        _, self.currentPose, self.goalPose = self.ic.returnData()
+        _, self.currentPose, self.goalPose, _, _ = self.ic.returnData()
         roll, pitch, yaw = self.returnRollPitchYaw(self.currentPose.pose.pose.orientation)
 
         currenVel = self.currentPose.twist.twist.linear.x

@@ -30,6 +30,7 @@ class image_converter():
         self.VERBOSE = True
         self.robotGroundMap = np.zeros((24, 24), dtype = "uint8")
         self.currentPose = Odometry()
+
         self.goalPose = Odometry()
         self.flipperPoseFront = JointState()
         self.flipperPoseRear = JointState()
@@ -65,7 +66,6 @@ class image_converter():
     def robotCallback(self,odom_data):
         self.currentPose = odom_data
 
-        self.robotMovementPub.publish( self.velocities)
        # self.countPub +=1
        # if self.countPub % 1000 == 0:
          #   self.countPub = 0
@@ -106,8 +106,8 @@ class image_converter():
         self.robotFlipperRearPub = rospy.Publisher("/GETjag" + str(self.number) + "/flipper_rear_controller/cmd_vel", Float64, queue_size=10)
         self.robotPoseSub = rospy.Subscriber("GETjag" + str(self.number) + "/odom", Odometry, self.robotCallback)
 
-        self.flipperFrontPoseSub = rospy.Subscriber("GETjag" + str(self.number) + "/flipper_front_controller/state", JointState, self.robotCallback)
-        self.flipperRearPoseSub = rospy.Subscriber("GETjag" + str(self.number) + "/flipper_rear_controller/state", JointState, self.robotCallback)
+        self.flipperFrontPoseSub = rospy.Subscriber("GETjag" + str(self.number) + "/flipper_front_controller/state", JointState, self.flipperFrontPose)
+        self.flipperRearPoseSub = rospy.Subscriber("GETjag" + str(self.number) + "/flipper_rear_controller/state", JointState, self.flipperRearPose)
 
         self.goalPoseSub = rospy.Subscriber("/GETjag" + str(self.number) + "/goal_pose", Odometry, self.goalCallback)
         self.robotGroundMapSub = rospy.Subscriber("/GETjag" + str(self.number) + "/elevation_robot_ground_map", Image,

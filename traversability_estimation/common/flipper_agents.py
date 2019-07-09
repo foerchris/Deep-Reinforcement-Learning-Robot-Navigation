@@ -19,7 +19,7 @@ from hgext.histedit import action
 dirname = os.path.dirname(__file__)
 import sys
 sys.path.append(os.path.join(dirname, 'common'))
-from model import FeatureNetwork, ActorCritic, ICMModel
+from flipper_model import FeatureNetwork, ActorCritic
 
 class Agent():
     def __init__(self,state_size_map, state_size_orientation, num_outputs, hidden_size, stack_size, load_model, MODELPATH, learning_rate, mini_batch_size, worker_number, lr_decay_epoch, init_lr, eta = 0.01):

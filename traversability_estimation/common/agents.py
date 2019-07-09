@@ -33,7 +33,7 @@ class Agent():
         self.device   = torch.device("cuda" if use_cuda else "cpu")
         torch.cuda.empty_cache()
         self.summary_writer = tf.summary.FileWriter("train_getjag/ppo/Tensorboard")
-        self.feature_net = FeatureNetwork(state_size_map*4, state_size_depth * stack_size, state_size_goal * 4 , hidden_size, stack_size).to(self.device)
+        self.feature_net = FeatureNetwork(state_size_map*stack_size, state_size_depth * 4, state_size_goal * 4 , hidden_size, stack_size).to(self.device)
 
         self.ac_model = ActorCritic(num_outputs, hidden_size).to(self.device)
         self.icm_model = ICMModel(num_outputs, hidden_size).to(self.device)
@@ -48,7 +48,8 @@ class Agent():
             self.icm_model.apply(self.icm_model.init_weights)
 
 
-        self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()) + list(self.icm_model.parameters()), lr=learning_rate)
+        #self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()) + list(self.icm_model.parameters()), lr=learning_rate)
+        self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=learning_rate)
 
 
     def compute_gae(self, next_value, rewards, masks, values, gamma=0.99, tau=0.95):
@@ -87,7 +88,8 @@ class Agent():
         #if(lr>=1e-5):
         # lr=1e-5
        # print('learning rate: ' + str(lr))
-        self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()) + list(self.icm_model.parameters()), lr=lr)
+        #self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()) + list(self.icm_model.parameters()), lr=lr)
+        self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lr)
 
 
 
@@ -109,18 +111,18 @@ class Agent():
                  # --------------------------------------------------------------------------------
                 # for Curiosity-driven
 
-                real_state_feature, _, _ = self.feature_net(map_state, depth_state, goal_state, hidden_state_h, hidden_state_c)
-                real_next_state_feature, _, _ = self.feature_net(next_map_state, next_depth_state, next_goal_state, next_hidden_state_h, next_hidden_state_c)
+               # real_state_feature, _, _ = self.feature_net(map_state, depth_state, goal_state, hidden_state_h, hidden_state_c)
+               # real_next_state_feature, _, _ = self.feature_net(next_map_state, next_depth_state, next_goal_state, next_hidden_state_h, next_hidden_state_c)
 
-                pred_next_state_feature, pred_action = self.icm_model(real_state_feature, real_next_state_feature, action)
+               # pred_next_state_feature, pred_action = self.icm_model(real_state_feature, real_next_state_feature, action)
 
                 #print('action' + str(action.mean))
                 #print('pred_action' + str(pred_action.mean))
 
                 #inverse_loss = ce(pred_action, action.to(torch.long))
-                inverse_loss = forward_mse(pred_action, action.detach())
+                #inverse_loss = forward_mse(pred_action, action.detach())
 
-                forward_loss = forward_mse(pred_next_state_feature, real_next_state_feature.detach())
+               # forward_loss = forward_mse(pred_next_state_feature, real_next_state_feature.detach())
                 # ---------------------------------------------------------------------------------
 
                 features, _, _ = self.feature_net(map_state, depth_state, goal_state, hidden_state_h, hidden_state_c)
@@ -149,7 +151,7 @@ class Agent():
 
                 critic_loss =  .5 * (-torch.min(vf_losses1, vf_losses2).mean())
 
-                loss = discount * critic_loss + actor_loss - beta * entropy + forward_loss + inverse_loss
+                loss = discount * critic_loss + actor_loss - beta * entropy #+ forward_loss + inverse_loss
                 #print('loss' + str(loss))
 
                 self.optimizer.zero_grad()

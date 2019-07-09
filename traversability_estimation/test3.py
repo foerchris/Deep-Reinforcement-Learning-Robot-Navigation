@@ -15,3 +15,10 @@ lr_decay_epoch = 120
 
 lr = init_lr - (init_lr - final_lr)*(1-m.exp(-epoch/lr_decay_epoch))
 print('learning rate' + str(lr))
+
+data1 = np.zeros((3))
+bla = 2
+
+data2 = np.append(data1, bla)
+
+print(data2.shape)

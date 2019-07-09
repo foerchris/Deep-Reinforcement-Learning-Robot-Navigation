@@ -305,8 +305,6 @@ class robotEnv():
             EndEpisode = True
             self.number_reached_goal
 
-        if currentdistance <= 0.5:
-            reward += 20
 
         if  self.stepCounter>=self.EpisodeLength:
             EndEpisode = True

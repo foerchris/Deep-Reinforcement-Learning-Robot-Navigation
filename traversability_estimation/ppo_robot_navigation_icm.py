@@ -145,14 +145,14 @@ def plot(frame_idx, rewards):
 
 #Hyper params:
 hidden_size      = 576
-lr               = 1e-4
+lr               = 1e-3
 lr_decay_epoch   = 120.0
 init_lr          = lr
 epoch            = 0.0
 
 max_num_steps    = 500
-num_steps        = 200
-mini_batch_size  = 8
+num_steps        = 400
+mini_batch_size  = 6
 ppo_epochs       = 4
 GAMMA            = 0.99
 GAE_LAMBDA       = 0.95
@@ -242,7 +242,6 @@ while frame_idx < max_frames and not early_stop:
 
             #print(dist.stddev())
             #
-            print(dist.entropy())
 
             action = dist.sample()
 
@@ -272,9 +271,9 @@ while frame_idx < max_frames and not early_stop:
             next_features, _, _ = agent.feature_net(torch.FloatTensor(next_map_state).to(device), torch.FloatTensor(next_depth_state).to(device) , torch.FloatTensor(next_goal_state).to(device), next_hidden_state_h, next_hidden_state_h)
 
             # total reward = int reward
-            intrinsic_reward = agent.compute_intrinsic_reward(features, next_features, action)
+            #intrinsic_reward = agent.compute_intrinsic_reward(features, next_features, action)
 
-            reward +=  intrinsic_reward
+            #reward +=  intrinsic_reward
             total_reward += reward
 
             for i in range(0, num_envs):

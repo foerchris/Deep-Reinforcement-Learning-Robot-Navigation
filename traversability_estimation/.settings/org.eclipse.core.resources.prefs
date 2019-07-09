@@ -1,10 +1,15 @@
 eclipse.preferences.version=1
 encoding//common/agents.py=utf-8
+encoding//common/flipper_agents.py=utf-8
+encoding//common/flipper_model.py=utf-8
 encoding//common/model.py=utf-8
 encoding//common/model_old.py=utf-8
 encoding//common/robot_env.py=utf-8
+encoding//common/robot_env_flipper.py=utf-8
 encoding//common/robot_wrapper.py=utf-8
+encoding//common/robot_wrapper_flipper.py=utf-8
 encoding/a3c_roboter_navigation_local.py=utf-8
+encoding/ppo_flipper_control.py=utf-8
 encoding/ppo_robot_navigation.py=utf-8
 encoding/ppo_robot_navigation_icm.py=utf-8
 encoding/ppo_robot_navigation_icm_old.py=utf-8

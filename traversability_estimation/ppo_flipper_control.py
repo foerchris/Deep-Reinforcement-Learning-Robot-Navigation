@@ -30,10 +30,10 @@ sys.path.append(os.path.join(dirname, 'common'))
 from tensorboardX import SummaryWriter
 
 
-from multiprocessing_env import SubprocVecEnv
-from robot_env import robotEnv
+from multiprocessing_env_flipper import SubprocVecEnv
+from robot_env_flipper import robotEnv
 
-from agents import Agent
+from flipper_agents import Agent
 
 
 MODELPATH = os.path.join(dirname, 'train_getjag/ppo/Model')
