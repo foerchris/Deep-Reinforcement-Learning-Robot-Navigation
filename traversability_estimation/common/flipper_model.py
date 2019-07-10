@@ -31,35 +31,26 @@ class FeatureNetwork(nn.Module):
 
         super(FeatureNetwork, self).__init__()
 
-        # This is the ElevMap part
+        #This is the ElevMap part
         self.cnn_map = nn.Sequential(
-            nn.Conv2d(in_channels=stack_size, out_channels=32, kernel_size=7, stride=1, padding=0),
+            nn.Conv2d(in_channels=stack_size, out_channels=32, kernel_size=5, stride=1, padding=0),
             nn.ReLU(),
             nn.MaxPool2d(2,stride=2),
-            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=6, stride=1, padding=0),
-            nn.ReLU(),
-            nn.MaxPool2d(2, stride=2),
-            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=5, stride=1, padding=0),
-            nn.ReLU(),
-            nn.MaxPool2d(2, stride=2),
-            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=4, stride=1, padding=0),
-            nn.ReLU(),
-            nn.MaxPool2d(2, stride=2)
         )
 
         # This is the orientation pose part
         self.cnn_orientation = nn.Sequential(
-            nn.Linear(state_size_orientation, 5184),
+            nn.Linear(state_size_orientation, 4608),
             nn.ReLU()
         )
 
         self.cnn_map_orientation = nn.Sequential(
-            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=4, stride=1, padding=0),
+            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=1, padding=0),
             nn.ReLU(),
             nn.MaxPool2d(2, stride=2)
         )
 
-        self.lstm = nn.LSTM(hidden_size, hidden_size, num_layers=1)
+        self.lstm = nn.LSTM(hidden_size*2, hidden_size, num_layers=1)
 
         #self.hidden = self.init_hidden()
     def init_weights(self,m):
@@ -101,6 +92,7 @@ class FeatureNetwork(nn.Module):
 
        # plt.imshow(map_state[0][0].cpu().numpy() ,cmap="gray")
         #plt.show()
+
         map = self.cnn_map(map_state)
 
         orientation_state = orientation_state.view(-1, orientation_state.shape[1]* orientation_state.shape[2])
@@ -109,12 +101,13 @@ class FeatureNetwork(nn.Module):
 
         orientation = orientation.view(-1, map.shape[1], map.shape[2], map.shape[3])
 
-
         map_and_orientation = map.add(orientation)
 
         map_orientation_out = self.cnn_map_orientation(map_and_orientation)
 
-        map_orientation_out = map_orientation_out.view(1, -1, map_orientation_out.shape[1])
+
+        map_orientation_out = map_orientation_out.view(1, map_state.shape[0], -1)
+
 
         lstm_out, self.hidden = self.lstm(map_orientation_out, self.hidden)
 

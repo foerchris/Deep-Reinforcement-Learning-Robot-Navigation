@@ -51,14 +51,15 @@ class robotEnv():
         self.startGoalDistance = 0
         self.lastDistance = 0
         self.startTime =0
+        self.delta_vel_memory = Memory(20)
 
         self.lastTime = 0
 
         self.observation_space = []
-        self.observation_space.append(gym.spaces.Box(low=-1, high=1, shape=(24,24),dtype = np.float16))
-        self.observation_space.append(gym.spaces.Box(low=-1, high=1, shape=(7,1),dtype = np.float16))
+        self.observation_space.append(gym.spaces.Box(low=-1, high=1, shape=(28,28),dtype = np.float32))
+        self.observation_space.append(gym.spaces.Box(low=-1, high=1, shape=(7,1),dtype = np.float32))
 
-        self.action_space = gym.spaces.Box(low=-1, high=1, shape=(2,1), dtype = np.float16)
+        self.action_space = gym.spaces.Box(low=-1, high=1, shape=(2,1), dtype = np.float32)
         self.total_reward = 0
         signal.signal(signal.SIGINT, self.signal_handler)
         self.number_of_epsiodes = 0
@@ -89,6 +90,7 @@ class robotEnv():
 
         #if(self.number ==1):
           #  print("action:" + str(action))
+        self.startSteps()
 
         self.ic.setAction(action)
         self.stepCounter += 1
@@ -104,7 +106,7 @@ class robotEnv():
 
         info = {}
         robotGroundData, currentPose = self.get_state()
-        self.ic.stop()
+        self.stopSteps()
 
         return  robotGroundData, currentPose, reward, d, info
 
@@ -116,9 +118,10 @@ class robotEnv():
         roll, pitch, yaw = self.returnRollPitchYaw(self.currentPose.pose.pose.orientation)
 
         currentOrientation = np.asarray([roll, pitch, yaw])
+        currentOrientation = np.asarray(currentOrientation, dtype=np.float32  )
 
-        robotGroundMap = np.asarray(robotGroundMap)
-        robotGroundMap = robotGroundMap.astype('float16')
+        robotGroundMap = np.asarray(robotGroundMap, dtype=np.float32  )
+
 
         # norrm input data between -1 and 1
         robotGroundMap =  np.divide(robotGroundMap, 255) #255
@@ -128,12 +131,12 @@ class robotEnv():
         currentOrientation = np.append(currentOrientation, self.currentPose.twist.twist.linear.x)
         currentOrientation = np.append(currentOrientation, self.currentPose.twist.twist.angular.z)
 
-        print("currentOrientation" + str(currentOrientation))
-        robotGroundMap = np.asarray(robotGroundMap, dtype=np.float16)
-        currentOrientation = np.asarray(currentOrientation, dtype=np.float16)
+        #print("currentOrientation" + str(currentOrientation))
+        robotGroundMap = np.asarray(robotGroundMap, dtype=np.float32  )
+        currentOrientation = np.asarray(currentOrientation, dtype=np.float32  )
 
         # replace nan values with 0
-        robotGroundMap.reshape(1,24,24)
+        robotGroundMap.reshape(1,28,28)
         currentOrientation.reshape(1,7)
 
         return robotGroundMap, currentOrientation
@@ -147,6 +150,7 @@ class robotEnv():
         # reset the model and replace the robot at a random location
         self.ic.stop()
         valiedEnv = False
+        self.delta_vel_memory.resetBuffer()
 
         # resest the step counter
         self.stepCounter=0
@@ -192,6 +196,7 @@ class robotEnv():
                 s.quit()
                 print("worker_" + str(self.number) + " stucked at cheak for valid state");
 
+
         self.startTime = time.time()
         self.lastTime = self.startTime
 
@@ -205,6 +210,9 @@ class robotEnv():
         roll, pitch, yaw = self.returnRollPitchYaw(self.currentPose.pose.pose.orientation)
 
         currenVel = self.currentPose.twist.twist.linear.x
+        self.delta_vel_memory.add(currenVel)
+        var_delta_vel = self.delta_vel_memory.var();
+        mean_delta_vel = self.delta_vel_memory.mean();
 
         currentdistance = self.clcDistance(self.currentPose.pose.pose.position,self.goalPose.pose.pose.position)
         currentTime = time.time()
@@ -240,14 +248,19 @@ class robotEnv():
         #    reward += explored /1000
         #else:
         #    reward += 1
+        reward = -0.2
 
-        if roll>=math.pi/4 or roll<=-math.pi/4 or pitch>=math.pi/4 or pitch<=-math.pi/4:
-            reward = -0.5
+        tip_over_angle = math.pi/4 + math.pi/8
+        if roll>=tip_over_angle or roll<=-tip_over_angle or pitch>=tip_over_angle or pitch<=-tip_over_angle:
+            reward = -1
             EndEpisode = True
 
        # if(self.number == 1):
        #     print("var_delta_vel" + str(var_delta_vel))
 
+        if (mean_delta_vel <= 1e-2):
+            reward = -1
+            EndEpisode = True
 
         if currentdistance <= self.deltaDist:
             reward = 100
@@ -271,14 +284,17 @@ class robotEnv():
         self.lastTime = currentTime
 
         self.episodeFinished = EndEpisode
-        reward = np.float16(reward)
+        reward = np.float32(reward)
        # print("reward" + str(reward))
         if(EndEpisode):
             self.explored_last = 0
         return reward, EndEpisode
 
     def stopSteps(self):
-        self.ic.stop()
+        self.ic.startStopRobot.data = False;
+
+    def startSteps(self):
+        self.ic.startStopRobot.data = True;
 
     def is_episode_finished(self):
         return self.episodeFinished

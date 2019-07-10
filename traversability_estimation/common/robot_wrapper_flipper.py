@@ -13,6 +13,7 @@ from sensor_msgs.msg import Image
 from std_msgs.msg import Float64
 
 from nav_msgs.msg import Odometry
+from std_msgs.msg import Bool
 
 
 import cv2
@@ -26,9 +27,10 @@ class image_converter():
 
         self.flipperVelFront = Float64()
         self.flipperVelRear = Float64()
-
+        self.startStopRobot = Bool()
+        self.startStopRobot.data = False;
         self.VERBOSE = True
-        self.robotGroundMap = np.zeros((24, 24), dtype = "uint8")
+        self.robotGroundMap = np.zeros((28, 28), dtype = "uint8")
         self.currentPose = Odometry()
 
         self.goalPose = Odometry()
@@ -46,7 +48,7 @@ class image_converter():
         bound = 70/180*m.pi
 
         frontPose = self.flipperPoseFront.current_pos
-        rearPose = self.flipperPoserear.current_pos
+        rearPose = self.flipperPoseRear.current_pos
 
         if(frontPose >= bound):
             action[0] = 0
@@ -65,6 +67,9 @@ class image_converter():
     # also transmits the robot action as velocities
     def robotCallback(self,odom_data):
         self.currentPose = odom_data
+        self.startStopRobotPub.publish( self.startStopRobot)
+        self.robotFlipperFrontPub.publish( self.flipperVelFront)
+        self.robotFlipperRearPub.publish( self.flipperVelRear)
 
        # self.countPub +=1
        # if self.countPub % 1000 == 0:
@@ -91,7 +96,7 @@ class image_converter():
             except CvBridgeError as e:
                 print(e)
 
-            self.robotGroundMap = cv2.resize(cv_image, (24, 24))
+            self.robotGroundMap = cv2.resize(cv_image, (28, 28))
 
     def returnData(self):
         return self.robotGroundMap, self.currentPose, self.goalPose, self.flipperPoseFront, self.flipperPoseRear
@@ -102,10 +107,11 @@ class image_converter():
         print("rospy.init_node('GETjag_"+ str(self.number) +"_drl_gaz_robot_env_wrapper_worker')");
         rospy.init_node('GETjag_'+ str(self.number) +'_drl_gaz_robot_env_wrapper_worker')
 
+        self.startStopRobotPub = rospy.Publisher("/GETjag" + str(self.number) + "/start_stop_robot", Bool, queue_size=10)
         self.robotFlipperFrontPub = rospy.Publisher("/GETjag" + str(self.number) + "/flipper_front_controller/cmd_vel", Float64, queue_size=10)
         self.robotFlipperRearPub = rospy.Publisher("/GETjag" + str(self.number) + "/flipper_rear_controller/cmd_vel", Float64, queue_size=10)
-        self.robotPoseSub = rospy.Subscriber("GETjag" + str(self.number) + "/odom", Odometry, self.robotCallback)
 
+        self.robotPoseSub = rospy.Subscriber("GETjag" + str(self.number) + "/odom", Odometry, self.robotCallback)
         self.flipperFrontPoseSub = rospy.Subscriber("GETjag" + str(self.number) + "/flipper_front_controller/state", JointState, self.flipperFrontPose)
         self.flipperRearPoseSub = rospy.Subscriber("GETjag" + str(self.number) + "/flipper_rear_controller/state", JointState, self.flipperRearPose)
 
