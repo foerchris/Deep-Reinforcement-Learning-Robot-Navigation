@@ -55,10 +55,10 @@ class robotEnv():
         self.lastTime = 0
 
         self.observation_space = []
-        self.observation_space.append(gym.spaces.Box(low=-1, high=1, shape=(24,24),dtype = np.float16))
-        self.observation_space.append(gym.spaces.Box(low=-1, high=1, shape=(7,1),dtype = np.float16))
+        self.observation_space.append(gym.spaces.Box(low=-1, high=1, shape=(28,28),dtype = np.float32))
+        self.observation_space.append(gym.spaces.Box(low=-1, high=1, shape=(7,1),dtype = np.float32))
 
-        self.action_space = gym.spaces.Box(low=-1, high=1, shape=(2,1), dtype = np.float16)
+        self.action_space = gym.spaces.Box(low=-1, high=1, shape=(2,1), dtype = np.float32)
         self.total_reward = 0
         signal.signal(signal.SIGINT, self.signal_handler)
         self.number_of_epsiodes = 0
@@ -89,6 +89,7 @@ class robotEnv():
 
         #if(self.number ==1):
           #  print("action:" + str(action))
+        self.startSteps()
 
         self.ic.setAction(action)
         self.stepCounter += 1
@@ -104,7 +105,7 @@ class robotEnv():
 
         info = {}
         robotGroundData, currentPose = self.get_state()
-        self.ic.stop()
+        self.stopSteps()
 
         return  robotGroundData, currentPose, reward, d, info
 
@@ -116,9 +117,10 @@ class robotEnv():
         roll, pitch, yaw = self.returnRollPitchYaw(self.currentPose.pose.pose.orientation)
 
         currentOrientation = np.asarray([roll, pitch, yaw])
+        currentOrientation = np.asarray(currentOrientation, dtype=np.float32  )
 
-        robotGroundMap = np.asarray(robotGroundMap)
-        robotGroundMap = robotGroundMap.astype('float16')
+        robotGroundMap = np.asarray(robotGroundMap, dtype=np.float32  )
+
 
         # norrm input data between -1 and 1
         robotGroundMap =  np.divide(robotGroundMap, 255) #255
@@ -128,12 +130,12 @@ class robotEnv():
         currentOrientation = np.append(currentOrientation, self.currentPose.twist.twist.linear.x)
         currentOrientation = np.append(currentOrientation, self.currentPose.twist.twist.angular.z)
 
-        print("currentOrientation" + str(currentOrientation))
-        robotGroundMap = np.asarray(robotGroundMap, dtype=np.float16)
-        currentOrientation = np.asarray(currentOrientation, dtype=np.float16)
+        #print("currentOrientation" + str(currentOrientation))
+        robotGroundMap = np.asarray(robotGroundMap, dtype=np.float32  )
+        currentOrientation = np.asarray(currentOrientation, dtype=np.float32  )
 
         # replace nan values with 0
-        robotGroundMap.reshape(1,24,24)
+        robotGroundMap.reshape(1,28,28)
         currentOrientation.reshape(1,7)
 
         return robotGroundMap, currentOrientation
@@ -191,6 +193,7 @@ class robotEnv():
                 s.sendmail(self.me, self.you, self.msg.as_string())
                 s.quit()
                 print("worker_" + str(self.number) + " stucked at cheak for valid state");
+
 
         self.startTime = time.time()
         self.lastTime = self.startTime
@@ -271,14 +274,17 @@ class robotEnv():
         self.lastTime = currentTime
 
         self.episodeFinished = EndEpisode
-        reward = np.float16(reward)
+        reward = np.float32(reward)
        # print("reward" + str(reward))
         if(EndEpisode):
             self.explored_last = 0
         return reward, EndEpisode
 
     def stopSteps(self):
-        self.ic.stop()
+        self.ic.startStopRobot.data = False;
+
+    def startSteps(self):
+        self.ic.startStopRobot.data = True;
 
     def is_episode_finished(self):
         return self.episodeFinished

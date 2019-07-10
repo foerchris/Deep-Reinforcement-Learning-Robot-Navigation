@@ -15,7 +15,7 @@ import tensorflow as tf
 from tensorboardX import SummaryWriter
 
 import os
-from hgext.histedit import action
+#from hgext.histedit import action
 dirname = os.path.dirname(__file__)
 import sys
 sys.path.append(os.path.join(dirname, 'common'))

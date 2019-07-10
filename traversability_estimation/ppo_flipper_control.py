@@ -79,7 +79,7 @@ num_outputs = envs.action_space.shape[0]
 stack_size = 4
 class image_stacker():
     def __init__(self, state_size, stack_size):
-        self.stacked_frames = deque([np.zeros((state_size_map), dtype=np.float16) for i in range(stack_size)], maxlen=stack_size)
+        self.stacked_frames = deque([np.zeros((state_size_map), dtype=np.float32) for i in range(stack_size)], maxlen=stack_size)
     def return_stacked_frame(self):
             return self.stacked_frames
 
@@ -87,8 +87,8 @@ class image_stacker():
 
 
 
-stacked_map_frames = deque([np.zeros((num_envs,state_size_map/state_size_map,state_size_map/state_size_map), dtype=np.float16) for i in range(stack_size)], maxlen=stack_size)
-stacked_orientation_frames = deque([np.zeros((num_envs,state_size_orientation), dtype=np.float16) for i in range(stack_size)], maxlen=stack_size)
+stacked_map_frames = deque([np.zeros((num_envs,state_size_map/state_size_map,state_size_map/state_size_map), dtype=np.float32) for i in range(stack_size)], maxlen=stack_size)
+stacked_orientation_frames = deque([np.zeros((num_envs,state_size_orientation), dtype=np.float32) for i in range(stack_size)], maxlen=stack_size)
 
 
 def reset_single_frame(stacked_frames, state, stack_size, number):
@@ -105,7 +105,7 @@ def stack_frames(stacked_frames, state, stack_size, is_new_episode):
 
     if is_new_episode:
         # Clear our stacked_frames
-        stacked_frames = deque([np.zeros((state.shape), dtype=np.float16) for i in range(stack_size)], maxlen=stack_size)
+        stacked_frames = deque([np.zeros((state.shape), dtype=np.float32) for i in range(stack_size)], maxlen=stack_size)
 
 
         # Because we're in a new episode, copy the same frame 4x
@@ -140,15 +140,15 @@ def plot(frame_idx, rewards):
 
 
 #Hyper params:
-hidden_size      = 576
-lr               = 1e-4
+hidden_size      = 512
+lr               = 1e-3
 lr_decay_epoch   = 120.0
 init_lr          = lr
 epoch            = 0.0
 
-max_num_steps    = 500
-num_steps        = 200
-mini_batch_size  = 8
+max_num_steps    = 250
+num_steps        = 400
+mini_batch_size  = 6
 ppo_epochs       = 4
 GAMMA            = 0.99
 GAE_LAMBDA       = 0.95
@@ -213,7 +213,6 @@ while frame_idx < max_frames and not early_stop:
 
     agent.feature_net.eval()
     agent.ac_model.eval()
-    agent.icm_model.eval()
     total_reward_worker1 = []
     for i in range(0, num_envs):
         total_reward_worker1.append(0)
@@ -221,11 +220,8 @@ while frame_idx < max_frames and not early_stop:
     with torch.no_grad():
         for _ in range(num_steps):
 
-
             map_state = torch.FloatTensor(map_state).to(device)
-            orientation_state = torch.FloatTensor(goal_state).to(device)
-
-
+            orientation_state = torch.FloatTensor(orientation_state).to(device)
 
             features, next_hidden_state_h, next_hidden_state_c = agent.feature_net(map_state, orientation_state, hidden_state_h, hidden_state_c)
 
@@ -259,12 +255,7 @@ while frame_idx < max_frames and not early_stop:
             next_map_state, stacked_map_frames = stack_frames(stacked_map_frames,next_map_state,stack_size, False)
             next_orientation_state, stacked_orientation_frames = stack_frames(stacked_orientation_frames,next_orientation_state,stack_size, False)
 
-            next_features, _, _ = agent.feature_net(torch.FloatTensor(next_map_state).to(device), torch.FloatTensor(next_orientation_state).to(device), next_hidden_state_h, next_hidden_state_h)
 
-            # total reward = int reward
-            intrinsic_reward = agent.compute_intrinsic_reward(features, next_features, action)
-
-            reward +=  intrinsic_reward
             total_reward += reward
 
             for i in range(0, num_envs):
@@ -352,11 +343,6 @@ while frame_idx < max_frames and not early_stop:
                         tensor = tensor.cpu().numpy()
                         writer.add_histogram(name, tensor, bins='doane')
 
-                for name, param in agent.icm_model.named_parameters():
-                    if param.requires_grad:
-                        tensor = param.data
-                        tensor = tensor.cpu().numpy()
-                        writer.add_histogram(name, tensor, bins='doane')
 
                 print("updated tensorboard")
 
@@ -371,7 +357,6 @@ while frame_idx < max_frames and not early_stop:
                 if mean_test_rewards > threshold_reward: early_stop = True
                 torch.save(agent.feature_net.state_dict(), MODELPATH + '/save_ppo_feature_net.dat')
                 torch.save(agent.ac_model.state_dict(), MODELPATH + '/save_ppo_ac_model.dat')
-                torch.save(agent.icm_model.state_dict(), MODELPATH + '/save_ppo_icm_model.dat')
 
 
             next_map_state = torch.FloatTensor(next_map_state).to(device)
@@ -382,7 +367,6 @@ while frame_idx < max_frames and not early_stop:
 
     agent.feature_net.train()
     agent.ac_model.train()
-    agent.icm_model.train()
 
     next_features, _, _= agent.feature_net(next_map_state, next_orientation_state, hidden_state_h, hidden_state_c)
 

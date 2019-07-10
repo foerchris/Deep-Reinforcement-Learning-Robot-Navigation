@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import math as m
-
+import torch
 X = np.random.random((100, 100)) # sample 2D array
 plt.imshow(X, cmap="gray")
 plt.show()
@@ -22,3 +22,16 @@ bla = 2
 data2 = np.append(data1, bla)
 
 print(data2.shape)
+
+t1 = torch.zeros([2, 4], dtype=torch.float32)
+print(t1)
+print(t1.shape)
+
+t2 = torch.zeros([2, 4], dtype=torch.float32)
+print(t2)
+print(t2.shape)
+
+t3 = t1.add(t2);
+
+print(t3)
+print(t3.shape)
