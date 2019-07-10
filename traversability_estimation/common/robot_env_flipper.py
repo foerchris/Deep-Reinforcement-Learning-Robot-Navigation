@@ -51,6 +51,7 @@ class robotEnv():
         self.startGoalDistance = 0
         self.lastDistance = 0
         self.startTime =0
+        self.delta_vel_memory = Memory(20)
 
         self.lastTime = 0
 
@@ -149,6 +150,7 @@ class robotEnv():
         # reset the model and replace the robot at a random location
         self.ic.stop()
         valiedEnv = False
+        self.delta_vel_memory.resetBuffer()
 
         # resest the step counter
         self.stepCounter=0
@@ -208,6 +210,9 @@ class robotEnv():
         roll, pitch, yaw = self.returnRollPitchYaw(self.currentPose.pose.pose.orientation)
 
         currenVel = self.currentPose.twist.twist.linear.x
+        self.delta_vel_memory.add(currenVel)
+        var_delta_vel = self.delta_vel_memory.var();
+        mean_delta_vel = self.delta_vel_memory.mean();
 
         currentdistance = self.clcDistance(self.currentPose.pose.pose.position,self.goalPose.pose.pose.position)
         currentTime = time.time()
@@ -243,14 +248,19 @@ class robotEnv():
         #    reward += explored /1000
         #else:
         #    reward += 1
+        reward = -0.2
 
-        if roll>=math.pi/4 or roll<=-math.pi/4 or pitch>=math.pi/4 or pitch<=-math.pi/4:
-            reward = -0.5
+        tip_over_angle = math.pi/4 + math.pi/8
+        if roll>=tip_over_angle or roll<=-tip_over_angle or pitch>=tip_over_angle or pitch<=-tip_over_angle:
+            reward = -1
             EndEpisode = True
 
        # if(self.number == 1):
        #     print("var_delta_vel" + str(var_delta_vel))
 
+        if (mean_delta_vel <= 1e-2):
+            reward = -1
+            EndEpisode = True
 
         if currentdistance <= self.deltaDist:
             reward = 100

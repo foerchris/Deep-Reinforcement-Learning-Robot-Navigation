@@ -2,19 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="006d84f8-4341-4757-8cb1-e35d54703074" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/Gazebo Script/drlFlipper2.sh" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Gazebo Script/simFlipper2GETjag.sh" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/flipper_agents.py" beforeDir="false" afterPath="$PROJECT_DIR$/common/flipper_agents.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/flipper_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/common/flipper_model.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/robot_env.py" beforeDir="false" afterPath="$PROJECT_DIR$/common/robot_env.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/common/robot_env_flipper.py" beforeDir="false" afterPath="$PROJECT_DIR$/common/robot_env_flipper.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/robot_wrapper_flipper.py" beforeDir="false" afterPath="$PROJECT_DIR$/common/robot_wrapper_flipper.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ppo_flipper_control.py" beforeDir="false" afterPath="$PROJECT_DIR$/ppo_flipper_control.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test3.py" beforeDir="false" afterPath="$PROJECT_DIR$/test3.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/train_getjag/ppo/Tensorboard/events.out.tfevents.1562609393.getpc40" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/train_getjag/ppo/Tensorboard/events.out.tfevents.1562609614.getpc40" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/train_getjag/ppo/Tensorboard/events.out.tfevents.1562610418.getpc40" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -102,7 +91,7 @@
           <entry key="project.open.time.3" value="19" />
           <entry key="project.open.time.30" value="2" />
           <entry key="project.open.time.31" value="2" />
-          <entry key="project.open.time.32" value="1" />
+          <entry key="project.open.time.32" value="2" />
           <entry key="project.open.time.33" value="3" />
           <entry key="project.open.time.34" value="2" />
           <entry key="project.open.time.35" value="2" />
@@ -110,6 +99,7 @@
           <entry key="project.open.time.38" value="1" />
           <entry key="project.open.time.39" value="1" />
           <entry key="project.open.time.4" value="8" />
+          <entry key="project.open.time.40" value="1" />
           <entry key="project.open.time.42" value="1" />
           <entry key="project.open.time.43" value="1" />
           <entry key="project.open.time.46" value="1" />
@@ -125,13 +115,13 @@
           <entry key="project.open.time.7" value="2" />
           <entry key="project.open.time.8" value="1" />
           <entry key="project.open.time.9" value="1" />
-          <entry key="project.opened" value="154" />
+          <entry key="project.opened" value="156" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
         <counts>
           <entry key="ChrF-N850-Linux" value="4" />
-          <entry key="py" value="199" />
+          <entry key="py" value="200" />
           <entry key="sh" value="7" />
           <entry key="txt" value="2" />
           <entry key="xml" value="1" />
@@ -141,13 +131,13 @@
         <counts>
           <entry key="Bash" value="4" />
           <entry key="PLAIN_TEXT" value="9" />
-          <entry key="Python" value="199" />
+          <entry key="Python" value="200" />
           <entry key="XML" value="1" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="py" value="22213" />
+          <entry key="py" value="22273" />
           <entry key="sh" value="71" />
         </counts>
       </usages-collector>
@@ -155,7 +145,7 @@
         <counts>
           <entry key="Bash" value="64" />
           <entry key="PLAIN_TEXT" value="7" />
-          <entry key="Python" value="22213" />
+          <entry key="Python" value="22273" />
         </counts>
       </usages-collector>
     </session>
@@ -177,7 +167,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ppo_flipper_control.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="380">
+            <state relative-caret-position="1836">
               <caret line="171" column="28" selection-start-line="171" selection-start-column="28" selection-end-line="171" selection-end-column="28" />
             </state>
           </provider>
@@ -186,8 +176,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/common/robot_wrapper_flipper.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-9">
-              <caret line="41" lean-forward="true" selection-start-line="41" selection-end-line="41" />
+            <state relative-caret-position="300">
+              <caret line="41" selection-start-line="41" selection-end-line="41" />
               <folding>
                 <element signature="e#44#56#0" expanded="true" />
               </folding>
@@ -195,51 +185,24 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/common/robot_env_flipper.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="651">
-              <caret line="119" column="21" selection-start-line="119" selection-start-column="21" selection-end-line="119" selection-end-column="21" />
+            <state relative-caret-position="534">
+              <caret line="260" column="26" selection-start-line="260" selection-start-column="26" selection-end-line="260" selection-end-column="26" />
               <folding>
                 <element signature="e#44#62#0" expanded="true" />
-                <marker date="1562672427403" expanded="true" signature="7326:7335" ph="..." />
+                <marker date="1562759201582" expanded="true" signature="7413:7422" ph="..." />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/common/robot_env.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="279">
-              <caret line="240" column="43" selection-start-line="240" selection-start-column="43" selection-end-line="240" selection-end-column="43" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/common/robot_wrapper.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="684">
-              <caret line="71" column="17" selection-start-line="71" selection-end-line="72" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/common/multiprocessing_env_flipper.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="732">
-              <caret line="62" selection-start-line="62" selection-end-line="62" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/common/flipper_model.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="960">
-              <caret line="94" selection-start-line="94" selection-end-line="94" />
+            <state relative-caret-position="559">
+              <caret line="295" column="30" lean-forward="true" selection-start-line="293" selection-start-column="5" selection-end-line="295" selection-end-column="30" />
             </state>
           </provider>
         </entry>
@@ -255,7 +218,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>getS</find>
       <find>waiting</find>
       <find>get_state</find>
       <find>robotEnv</find>
@@ -285,6 +247,7 @@
       <find>hidd</find>
       <find>FeatureNetwork</find>
       <find>clcDistance</find>
+      <find>delta_vel_memory</find>
     </findStrings>
     <replaceStrings>
       <replace>test</replace>
@@ -353,9 +316,9 @@
         <option value="$PROJECT_DIR$/test3.py" />
         <option value="$PROJECT_DIR$/common/flipper_model.py" />
         <option value="$PROJECT_DIR$/common/robot_wrapper_flipper.py" />
-        <option value="$PROJECT_DIR$/common/robot_env_flipper.py" />
         <option value="$PROJECT_DIR$/ppo_flipper_control.py" />
         <option value="$PROJECT_DIR$/common/robot_env.py" />
+        <option value="$PROJECT_DIR$/common/robot_env_flipper.py" />
       </list>
     </option>
   </component>
@@ -573,22 +536,22 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-4" y="25" width="1928" height="1153" extended-state="6" />
+    <frame x="-4" y="25" width="1928" height="1033" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.12993161" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.12947369" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.32937366" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" sideWeight="0.4986849" visible="true" weight="0.3919694" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" sideWeight="0.49842104" visible="true" weight="0.39154014" />
       <window_info anchor="bottom" id="Debug" order="3" sideWeight="0.4986849" weight="0.4438445" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" sideWeight="0.49920928" weight="0.32780486" />
       <window_info anchor="bottom" id="Version Control" order="7" sideWeight="0.499737" weight="0.32937366" />
       <window_info anchor="bottom" id="Terminal" order="8" sideWeight="0.49868214" weight="0.3287805" />
-      <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.5007907" side_tool="true" weight="0.3287805" />
+      <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.5015789" side_tool="true" weight="0.39154014" />
       <window_info anchor="bottom" id="Python Console" order="10" sideWeight="0.49920928" weight="0.3287805" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
@@ -904,10 +867,20 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/common/robot_wrapper.py">
+    <entry file="file://$PROJECT_DIR$/ppo_flipper_control.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="684">
-          <caret line="71" column="17" selection-start-line="71" selection-end-line="72" />
+        <state relative-caret-position="1836">
+          <caret line="171" column="28" selection-start-line="171" selection-start-column="28" selection-end-line="171" selection-end-column="28" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/common/robot_wrapper_flipper.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="300">
+          <caret line="41" selection-start-line="41" selection-end-line="41" />
+          <folding>
+            <element signature="e#44#56#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -925,38 +898,28 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/ppo_flipper_control.py">
+    <entry file="file://$PROJECT_DIR$/common/robot_wrapper.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="380">
-          <caret line="171" column="28" selection-start-line="171" selection-start-column="28" selection-end-line="171" selection-end-column="28" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/common/robot_wrapper_flipper.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-9">
-          <caret line="41" lean-forward="true" selection-start-line="41" selection-end-line="41" />
-          <folding>
-            <element signature="e#44#56#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/common/robot_env_flipper.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="651">
-          <caret line="119" column="21" selection-start-line="119" selection-start-column="21" selection-end-line="119" selection-end-column="21" />
-          <folding>
-            <element signature="e#44#62#0" expanded="true" />
-            <marker date="1562672427403" expanded="true" signature="7326:7335" ph="..." />
-          </folding>
+        <state relative-caret-position="684">
+          <caret line="71" column="17" selection-start-line="71" selection-end-line="72" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/common/robot_env.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="279">
-          <caret line="240" column="43" selection-start-line="240" selection-start-column="43" selection-end-line="240" selection-end-column="43" />
+        <state relative-caret-position="559">
+          <caret line="295" column="30" lean-forward="true" selection-start-line="293" selection-start-column="5" selection-end-line="295" selection-end-column="30" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/common/robot_env_flipper.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="534">
+          <caret line="260" column="26" selection-start-line="260" selection-start-column="26" selection-end-line="260" selection-end-column="26" />
+          <folding>
+            <element signature="e#44#62#0" expanded="true" />
+            <marker date="1562759201582" expanded="true" signature="7413:7422" ph="..." />
+          </folding>
         </state>
       </provider>
     </entry>
