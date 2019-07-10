@@ -36,7 +36,7 @@ from robot_env_flipper import robotEnv
 from flipper_agents import Agent
 
 
-MODELPATH = os.path.join(dirname, 'train_getjag/ppo/Model')
+MODELPATH = os.path.join(dirname, 'train_getjag/ppo_flipper/Model')
 
 load_model = False
 last_number_of_frames = 0
@@ -44,11 +44,11 @@ frame_idx  = 0 + last_number_of_frames
 num_envs_possible = 16;
 num_envs = 0;
 
-summary_writer = tf.summary.FileWriter("train_getjag/ppo/Tensorboard")
+summary_writer = tf.summary.FileWriter("train_getjag/ppo_flipper/Tensorboard")
 
 #test_writer = tf.summary.FileWriter("train_getjag/train_" + str(0), sess.graph)
 
-writer = SummaryWriter("train_getjag/ppo/Tensorboard")
+writer = SummaryWriter("train_getjag/ppo_flipper/Tensorboard")
 for i in range(num_envs_possible):
     if (rospy.has_param("/GETjag" + str(i) + "/worker_ready")):
         if (rospy.get_param("/GETjag" + str(i) + "/worker_ready")):
