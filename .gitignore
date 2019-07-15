@@ -11,6 +11,8 @@
 *.chfo
 *.svg
 *.getpc22
+*.getpc40
+*.getpc11
 machine_learning_examples
 baselines-master
 traversability_estimation/model
