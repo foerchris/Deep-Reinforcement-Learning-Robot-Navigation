@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math as m
 import torch
+
+
 X = np.random.random((100, 100)) # sample 2D array
 plt.imshow(X, cmap="gray")
 plt.show()

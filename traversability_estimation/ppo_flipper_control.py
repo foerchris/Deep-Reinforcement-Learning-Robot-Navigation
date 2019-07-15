@@ -76,7 +76,7 @@ state_size_orientation   = envs.observation_space[1].shape[0]
 
 num_outputs = envs.action_space.shape[0]
 
-stack_size = 4
+stack_size = 1
 class image_stacker():
     def __init__(self, state_size, stack_size):
         self.stacked_frames = deque([np.zeros((state_size_map), dtype=np.float32) for i in range(stack_size)], maxlen=stack_size)
@@ -231,7 +231,7 @@ while frame_idx < max_frames and not early_stop:
 
             #print(dist.stddev())
             #
-            print(dist.entropy())
+            #print(dist.entropy())
 
             action = dist.sample()
 

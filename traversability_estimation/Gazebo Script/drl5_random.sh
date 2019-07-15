@@ -132,7 +132,7 @@ do
 			
 			else
 				#/scratch-local/cdtemp/chfo/ros/packages/ros_traversability/traversability_estimation-master/traversability_estimation/mazegenerator-master/src/mazegen -m 0 -w 4 -h 4 -a 2 -t 0 -n $i > /dev/null 2>&1 &
-				/home/chfo/getbot/ros/robocup/traversability_estimation-master/traversability_estimation/mazegenerator-master/src/mazegen -m 0 -w 4 -h 4 -a 2 -t 0 -n $i > /dev/null 2>&1 &
+				#/home/chfo/getbot/ros/robocup/traversability_estimation-master/traversability_estimation/mazegenerator-master/src/mazegen -m 0 -w 4 -h 4 -a 2 -t 0 -n $i > /dev/null 2>&1 &
 				sleep 1
 			fi
 			i=$((i+1))

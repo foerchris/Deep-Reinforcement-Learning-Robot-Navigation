@@ -172,7 +172,7 @@ class robotEnv():
                 if Ready:
                     waitForReset = True
                 count_reset += 1
-                if(count_reset%100 == 0):
+                if(count_reset%1000 == 0):
                     s = smtplib.SMTP_SSL('smtp.gmail.com')
                     s.login(self.me, self.my_password)
                     s.sendmail(self.me, self.you, self.msg.as_string())
@@ -189,7 +189,7 @@ class robotEnv():
                 valiedEnv = True
                 sleep(0.2)
             count_valied_state +=1
-            if (count_valied_state % 100 == 0):
+            if (count_valied_state % 1000 == 0):
                 s = smtplib.SMTP_SSL('smtp.gmail.com')
                 s.login(self.me, self.my_password)
                 s.sendmail(self.me, self.you, self.msg.as_string())
@@ -292,6 +292,7 @@ class robotEnv():
 
     def stopSteps(self):
         self.ic.startStopRobot.data = False;
+        self.ic.stop()
 
     def startSteps(self):
         self.ic.startStopRobot.data = True;

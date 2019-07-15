@@ -44,21 +44,24 @@ class image_converter():
         self.flipperVelFront = 0
         self.flipperVelRear = 0
 
+
     def setAction(self, action):
-        bound = 70/180*m.pi
+        bound = 1.22
 
         frontPose = self.flipperPoseFront.current_pos
         rearPose = self.flipperPoseRear.current_pos
 
-        if(frontPose >= bound):
+
+        if(frontPose >= bound and action[0]>0):
             action[0] = 0
-        elif(frontPose <= -bound):
+        elif(frontPose <= -bound and action[0]<0):
             action[0] = 0
 
-        if (rearPose >= bound):
+        if (rearPose >= bound and action[1]>0):
             action[1] = 0
-        elif (rearPose <= -bound):
+        elif (rearPose <= -bound and action[1]<0):
             action[1] = 0
+
 
         self.flipperVelFront = action[0]
         self.flipperVelRear = action[1]

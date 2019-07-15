@@ -93,7 +93,6 @@ class robotEnv():
 
         #if(self.number ==1):
           #  print("action:" + str(action))
-
         self.ic.setAction(action)
         self.stepCounter += 1
 
@@ -222,7 +221,7 @@ class robotEnv():
                 s.quit()
                 print("worker_" + str(self.number) + " stucked at cheak for valid state");
 
-        self.startGoalDistance = self.clcDistance(self.currentPose.pose.pose.position,self.goalPose.pose.pose.position)
+        self.startGoalDistance = self.clcDistance(self.goalPose.pose.pose.position)
         self.closestDistance = self.startGoalDistance
         self.startTime = time.time()
         self.lastTime = self.startTime
@@ -341,7 +340,7 @@ class robotEnv():
     def return_times_reached_goal(self, start, goal):
         return self.number_of_epsiodes, self.number_reached_goal
 
-    def clcDistance(self,  goal):
+    def clcDistance(self, goal):
         distance = math.sqrt(pow((goal.x),2)+pow((goal.y),2))
         return distance
 
