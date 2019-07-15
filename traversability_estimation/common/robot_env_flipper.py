@@ -118,13 +118,15 @@ class robotEnv():
         roll, pitch, yaw = self.returnRollPitchYaw(self.currentPose.pose.pose.orientation)
 
         currentOrientation = np.asarray([roll, pitch, yaw])
+
         currentOrientation = np.asarray(currentOrientation, dtype=np.float32  )
 
         robotGroundMap = np.asarray(robotGroundMap, dtype=np.float32  )
 
 
         # norrm input data between -1 and 1
-        robotGroundMap =  np.divide(robotGroundMap, 255) #255
+        robotGroundMap =  np.divide(robotGroundMap, 65536) #255
+
         currentOrientation = np.divide(currentOrientation,math.pi)
         currentOrientation = np.append(currentOrientation, self.flipperPoseFront.current_pos/m.pi)
         currentOrientation = np.append(currentOrientation, self.flipperPoseRear.current_pos/m.pi)
@@ -265,7 +267,6 @@ class robotEnv():
         if currentdistance <= self.deltaDist:
             reward = 100
             text_file = open("a3c_results.txt", "a")
-            text_file.write(str(self.number) + 'reached Goal\n')
             text_file.write(str(self.number) + 'reached Goal\n')
             text_file.close()
             print("reached Goal")

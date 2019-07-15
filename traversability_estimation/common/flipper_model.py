@@ -91,13 +91,15 @@ class FeatureNetwork(nn.Module):
 
         self.hidden = (hidden_h, hidden_c)
 
-        #plt.imshow(map_state[0][0].cpu().numpy() ,cmap="gray")
-        #plt.show()
-        cv2.imshow('image',map_state[0][0].cpu().numpy())
-        cv2.waitKey(2)
+       # plt.imshow(map_state[0][0].cpu().numpy(),cmap="gray")
+       # plt.show()
+        #robotGroundMap =  np.multiply(map_state[0][0].cpu().numpy(), 2e8) #255
+
+        #cv2.imshow('image',robotGroundMap)
+        #cv2.waitKey(2)
         map = self.cnn_map(map_state)
 
-        print("orientation_state" + str(orientation_state))
+        #print("orientation_state" + str(orientation_state))
         orientation_state = orientation_state.view(-1, orientation_state.shape[1]* orientation_state.shape[2])
 
         orientation = self.cnn_orientation(orientation_state)

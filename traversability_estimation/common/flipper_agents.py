@@ -32,7 +32,7 @@ class Agent():
         use_cuda = torch.cuda.is_available()
         self.device   = torch.device("cuda" if use_cuda else "cpu")
         torch.cuda.empty_cache()
-        self.summary_writer = tf.summary.FileWriter("train_getjag/ppo/Tensorboard")
+        self.summary_writer = tf.summary.FileWriter("train_getjag/ppo_flipper/Tensorboard")
         self.feature_net = FeatureNetwork(state_size_map*stack_size, state_size_orientation * stack_size , hidden_size, stack_size).to(self.device)
 
         self.ac_model = ActorCritic(num_outputs, hidden_size).to(self.device)

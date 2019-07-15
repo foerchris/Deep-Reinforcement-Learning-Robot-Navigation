@@ -15,6 +15,7 @@ from std_msgs.msg import Float64
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Bool
 
+import matplotlib.pyplot as plt
 
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
@@ -30,7 +31,7 @@ class image_converter():
         self.startStopRobot = Bool()
         self.startStopRobot.data = False;
         self.VERBOSE = True
-        self.robotGroundMap = np.zeros((28, 28), dtype = "uint8")
+        self.robotGroundMap = np.zeros((28, 28), dtype = "uint16")
         self.currentPose = Odometry()
 
         self.goalPose = Odometry()
@@ -92,14 +93,16 @@ class image_converter():
 
     # return the eleviation map image with [200,200] Pixel and saves it to a global variable
     def robotGroundMapCallback(self, map_data):
-            '''Callback function of subscribed topic.
-                  Here images get converted and features detected'''
-            try:
-                cv_image = self.bridge.imgmsg_to_cv2(map_data, "8UC1")
-            except CvBridgeError as e:
-                print(e)
+        '''Callback function of subscribed topic.
+        Here images get converted and features detected'''
+        try:
+            cv_image = self.bridge.imgmsg_to_cv2(map_data)
+        except CvBridgeError as e:
+            print(e)
 
-            self.robotGroundMap = cv2.resize(cv_image, (28, 28))
+        self.robotGroundMap = np.asarray(cv2.resize(cv_image, (28, 28)))
+
+
 
     def returnData(self):
         return self.robotGroundMap, self.currentPose, self.goalPose, self.flipperPoseFront, self.flipperPoseRear
@@ -121,5 +124,6 @@ class image_converter():
         self.goalPoseSub = rospy.Subscriber("/GETjag" + str(self.number) + "/goal_pose", Odometry, self.goalCallback)
         self.robotGroundMapSub = rospy.Subscriber("/GETjag" + str(self.number) + "/elevation_robot_ground_map", Image,
                                              self.robotGroundMapCallback, queue_size=1)
+
     def shoutdown_node(self):
         rospy.signal_shutdown("because reasons")
