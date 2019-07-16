@@ -225,3 +225,101 @@ class ActorCritic(nn.Module):
         dist = Normal(mu, std)
 
         return dist, value, std
+
+class ICMModel(nn.Module):
+    def __init__(self, num_outputs, hidden_size, std=0.0):
+
+        self.hidden_dim = hidden_size
+        use_cuda = torch.cuda.is_available()
+        self.device   = torch.device("cuda" if use_cuda else "cpu")
+        torch.cuda.empty_cache()
+
+        super(ICMModel, self).__init__()
+
+        self.inverse_net = nn.Sequential(
+            nn.Linear(hidden_size*2, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, num_outputs),
+        )
+
+        self.residual = [nn.Sequential(
+            nn.Linear(num_outputs + hidden_size, hidden_size),
+            nn.LeakyReLU(),
+            nn.Linear(hidden_size, hidden_size),
+        ).to(self.device)]* 8
+
+        self.forward_net_1 = nn.Sequential(
+            nn.Linear(num_outputs + hidden_size, hidden_size),
+            nn.LeakyReLU()
+        )
+        self.forward_net_2 = nn.Sequential(
+            nn.Linear(num_outputs + hidden_size, hidden_size),
+        )
+
+#         for p in self.modules():
+#             if isinstance(p, nn.Conv2d):
+#                 init.kaiming_uniform_(p.weight)
+#                 p.bias.data.zero_()
+#
+#             if isinstance(p, nn.Linear):
+#                 init.kaiming_uniform_(p.weight, a=1.0)
+#                 p.bias.data.zero_()
+
+    def init_weights(self,m):
+        if isinstance(m, nn.Linear):
+            #nn.init.normal_(m.weight, mean=0., std=0.05)
+            torch.nn.init.orthogonal_(m.weight.data)
+            #nn.init.constant_(m.bias, 0.0)
+            if m.bias is not None:
+                torch.nn.init.zeros_(m.bias)
+        elif isinstance(m, nn.Conv2d):
+            torch.nn.init.xavier_uniform_(m.weight)
+            #torch.nn.init.orthogonal_(m.weight.data)
+            if m.bias is not None:
+                torch.nn.init.zeros_(m.bias)
+        elif isinstance(m, nn.LSTM):
+            for param in m.parameters():
+                if len(param.shape) >= 2:
+                    torch.nn.init.orthogonal_(param.data)
+                else:
+                    torch.nn.init.normal_(param.data)
+        elif isinstance(m, nn.LSTMCell):
+            for param in m.parameters():
+                if len(param.shape) >= 2:
+                    torch.nn.init.orthogonal_(param.data)
+                else:
+                    torch.nn.init.normal_(param.data)
+
+
+    def init_hidden(self, batch_size):
+        # Before we've done anything, we dont have any hidden state.
+        # Refer to the Pytorch documentation to see exactly
+        # why they have this dimensionality.
+        # The axes semantics are (num_layers, minibatch_size, hidden_dim)
+        return (torch.zeros(1, batch_size, self.hidden_dim, device=self.device),
+                torch.zeros(1, batch_size, self.hidden_dim, device=self.device))
+
+    def forward(self, lstm_out, next_lstm_out, action):
+
+        encode_state = lstm_out
+        encode_next_state = next_lstm_out
+
+        # get pred action
+        pred_action = torch.cat((lstm_out, next_lstm_out), 1)
+        pred_action = self.inverse_net(pred_action)
+        # ---------------------
+        # get pred next state
+        pred_next_state_feature_orig = torch.cat((lstm_out, action), 1)
+
+        pred_next_state_feature_orig = self.forward_net_1(pred_next_state_feature_orig)
+
+        # residual
+        for i in range(4):
+            pred_next_state_feature = torch.cat((pred_next_state_feature_orig, action), 1)
+            pred_next_state_feature = self.residual[i * 2](pred_next_state_feature)
+            pred_next_state_feature_orig = self.residual[i * 2 + 1](torch.cat((pred_next_state_feature, action), 1)) + pred_next_state_feature_orig
+
+
+        pred_next_state_feature = self.forward_net_2(torch.cat((pred_next_state_feature_orig, action), 1))
+
+        return pred_next_state_feature, pred_action

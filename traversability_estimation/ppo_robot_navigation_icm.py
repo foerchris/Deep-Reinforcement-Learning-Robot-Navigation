@@ -33,7 +33,7 @@ from tensorboardX import SummaryWriter
 from multiprocessing_env import SubprocVecEnv
 from robot_env import robotEnv
 
-from agents import Agent
+from agents_icm import Agent
 
 
 MODELPATH = os.path.join(dirname, 'train_getjag/ppo/Model')
@@ -78,11 +78,10 @@ state_size_goal   = envs.observation_space[2].shape[0]
 num_outputs = envs.action_space.shape[0]
 
 stack_size = 1
-stack_size_depth = 4
-stack_size_goal = 4
+
 class image_stacker():
     def __init__(self, state_size, stack_size):
-        self.stacked_frames = deque([np.zeros((state_size_map), dtype=np.float16) for i in range(stack_size)], maxlen=stack_size)
+        self.stacked_frames = deque([np.zeros((state_size_map), dtype=np.float32) for i in range(stack_size)], maxlen=stack_size)
     def return_stacked_frame(self):
             return self.stacked_frames
 
@@ -90,9 +89,9 @@ class image_stacker():
 
 
 
-stacked_map_frames = deque([np.zeros((num_envs,state_size_map/state_size_map,state_size_map/state_size_map), dtype=np.float16) for i in range(stack_size)], maxlen=stack_size)
-stacked_depth_frames = deque([np.zeros((num_envs,state_size_depth/state_size_depth,state_size_depth/state_size_depth), dtype=np.float16) for i in range(stack_size_depth)], maxlen=stack_size)
-stacked_goal_frames = deque([np.zeros((num_envs,state_size_goal), dtype=np.float16) for i in range(stack_size_goal)], maxlen=stack_size_goal)
+stacked_map_frames = deque([np.zeros((num_envs,state_size_map/state_size_map,state_size_map/state_size_map), dtype=np.float32) for i in range(stack_size)], maxlen=stack_size)
+stacked_depth_frames = deque([np.zeros((num_envs,state_size_depth/state_size_depth,state_size_depth/state_size_depth), dtype=np.float32) for i in range(stack_size)], maxlen=stack_size)
+stacked_goal_frames = deque([np.zeros((num_envs,state_size_goal), dtype=np.float32) for i in range(stack_size)], maxlen=stack_size)
 
 
 def reset_single_frame(stacked_frames, state, stack_size, number):
@@ -109,7 +108,7 @@ def stack_frames(stacked_frames, state, stack_size, is_new_episode):
 
     if is_new_episode:
         # Clear our stacked_frames
-        stacked_frames = deque([np.zeros((state.shape), dtype=np.float16) for i in range(stack_size)], maxlen=stack_size)
+        stacked_frames = deque([np.zeros((state.shape), dtype=np.float32) for i in range(stack_size)], maxlen=stack_size)
 
 
         # Because we're in a new episode, copy the same frame 4x
@@ -186,8 +185,8 @@ best_reward = 0
 map_state,depth_state, goal_state = envs.reset()
 
 map_state, stacked_map_frames = stack_frames(stacked_map_frames, map_state, stack_size, True)
-depth_state, stacked_depth_frames = stack_frames(stacked_depth_frames, depth_state, stack_size_depth, True)
-goal_state, stacked_goal_frames = stack_frames(stacked_goal_frames, goal_state, stack_size_goal, True)
+depth_state, stacked_depth_frames = stack_frames(stacked_depth_frames, depth_state, stack_size, True)
+goal_state, stacked_goal_frames = stack_frames(stacked_goal_frames, goal_state, stack_size, True)
 
 agent.feature_net.hidden = agent.feature_net.init_hidden(num_envs)
 (hidden_state_h, hidden_state_c) = agent.feature_net.hidden
@@ -253,9 +252,9 @@ while frame_idx < max_frames and not early_stop:
             for i in range(0, num_envs):
                 if (done[i] == True):
                     _, stacked_map_frames = reset_single_frame(stacked_map_frames, next_map_state[i], stack_size, i)
-                    _, stacked_depth_frames = reset_single_frame(stacked_depth_frames, next_depth_state[i], stack_size_depth,
+                    _, stacked_depth_frames = reset_single_frame(stacked_depth_frames, next_depth_state[i], stack_size,
                                                                  i)
-                    _, stacked_goal_frames = reset_single_frame(stacked_goal_frames, next_goal_state[i], stack_size_goal, i)
+                    _, stacked_goal_frames = reset_single_frame(stacked_goal_frames, next_goal_state[i], stack_size, i)
 
                     (single_hidden_state_h, single_hidden_state_c) = agent.feature_net.init_hidden(1)
                     next_hidden_state_h[0][i] = single_hidden_state_h
@@ -265,15 +264,15 @@ while frame_idx < max_frames and not early_stop:
 
 
             next_map_state, stacked_map_frames = stack_frames(stacked_map_frames,next_map_state,stack_size, False)
-            next_depth_state, stacked_depth_frames = stack_frames(stacked_depth_frames,next_depth_state,stack_size_depth, False)
-            next_goal_state, stacked_goal_frames = stack_frames(stacked_goal_frames,next_goal_state,stack_size_goal, False)
+            next_depth_state, stacked_depth_frames = stack_frames(stacked_depth_frames,next_depth_state,stack_size, False)
+            next_goal_state, stacked_goal_frames = stack_frames(stacked_goal_frames,next_goal_state,stack_size, False)
 
             next_features, _, _ = agent.feature_net(torch.FloatTensor(next_map_state).to(device), torch.FloatTensor(next_depth_state).to(device) , torch.FloatTensor(next_goal_state).to(device), next_hidden_state_h, next_hidden_state_h)
 
-            # total reward = int reward
-            #intrinsic_reward = agent.compute_intrinsic_reward(features, next_features, action)
+            #total reward = int reward
+            intrinsic_reward = agent.compute_intrinsic_reward(features, next_features, action)
 
-            #reward +=  intrinsic_reward
+            reward +=  intrinsic_reward
             total_reward += reward
 
             for i in range(0, num_envs):

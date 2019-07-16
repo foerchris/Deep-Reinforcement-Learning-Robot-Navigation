@@ -26,7 +26,7 @@ WORKERNUMBER="0"
 NUMBEROFWORKERS="4"
 namespace="GETjag"
 tf_prefix="GETjag"
-world="DrlTestWorld5RobotsBox.world"
+world="DrlWorld5Robots.world"
 simulator="false"
 startdrlagent="false"
 drlagentStartet="false"
@@ -80,7 +80,7 @@ do
 	CANEXIT=0 
 	#reset watchdog
 	echo -e "[$(date +"%T")]: ${GREEN}Starting gazebo with world: ${NC}$world"
-	roslaunch get_gazebo_worlds getjag5.launch world:=$world gui:=$simulator > output_gazebo.txt 2>&1 &
+	roslaunch get_gazebo_worlds getjag0.launch world:=$world gui:=$simulator > output_gazebo.txt 2>&1 &
 	PIDs+=($!)
 	sleep 10
 	STARTTIME=$(date +%s.%N)

@@ -68,7 +68,7 @@ do
 	i=1
 	while [ $i -lt 6 ] 
 	do  	
-		roslaunch traversability_estimation create_map_random.launch namespace:="$namespace$i" > /dev/null 2>&1 &
+		roslaunch traversability_estimation gazebo_random_control.launch namespace:="$namespace$i" > /dev/null 2>&1 &
 		PIDs+=($!)
 		i=$((i+1))
 	done
@@ -98,7 +98,7 @@ do
 	i=1
 	while [ $i -lt 6 ] 
 	do
-		if (grep -q "/GETjag$i/robot_positioning_node" cheakNotes.txt and grep -q "/GETjag$i/elevation_mapper_node" cheakNotes.txt); then
+		if (grep -q "/GETjag$i/gazebo_random_control_node" cheakNotes.txt and grep -q "/GETjag$i/elevation_mapper_node" cheakNotes.txt); then
 			CANEXIT=0
 			if ($drlagentStartet -eq "true"); then		
 				if (grep -q "GETjag_drl_gaz_robot_env_wrapper" cheakNotes.txt); then
@@ -110,7 +110,7 @@ do
 				fi
 			fi		
 		else
-			echo -e "[$(date +"%T")]  Nodes not startet: GETjag$i/robot_positioning_node and /GETjag$i/elevation_mapper_node{NC}"
+			echo -e "[$(date +"%T")]  Nodes not startet: GETjag$i/gazebo_random_control_node and /GETjag$i/elevation_mapper_node{NC}"
 
 			CANEXIT=1
 		fi	
@@ -141,7 +141,7 @@ do
 	i=1
 	while [ $i -lt 6 ] 
 	do
-		rosnode kill "/GETjag$i/robot_positioning_node"
+		rosnode kill "/GETjag$i/gazebo_random_control_node"
 		rosnode kill "/GETjag$i/elevation_mapper_node"
 		i=$((i+1))
 	done

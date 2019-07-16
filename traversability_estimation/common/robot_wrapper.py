@@ -26,8 +26,8 @@ class image_converter():
 
 
         self.VERBOSE = True
-        self.depthImage =  np.zeros((84, 84), dtype = "float")
-        self.eleviationImage = np.zeros((200, 200), dtype = "uint8")
+        self.depthImage =  np.zeros((84, 84), dtype = np.float32)
+        self.eleviationImage = np.zeros((200, 200), dtype = "uint16")
         self.currentPose = Odometry()
         self.goalPose = Odometry()
         # actions, 0: hard turn left, 1: soft turn left, 2: drive forward, 3: soft turn right, 4: hard turn right
@@ -95,7 +95,7 @@ class image_converter():
         '''Callback function of subscribed topic.
               Here images get converted and features detected'''
         try:
-            cv_image = self.bridge2.imgmsg_to_cv2(map_data,"8UC1")
+            cv_image = self.bridge2.imgmsg_to_cv2(map_data)
         except CvBridgeError as e:
             print(e)
 

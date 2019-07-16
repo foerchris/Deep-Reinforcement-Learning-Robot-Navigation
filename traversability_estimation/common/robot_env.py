@@ -58,11 +58,11 @@ class robotEnv():
         self.delta_vel_memory = Memory(10)
 
         self.observation_space = []
-        self.observation_space.append(gym.spaces.Box(low=-1, high=1, shape=(200,200),dtype = np.float16))
-        self.observation_space.append(gym.spaces.Box(low=-1, high=1, shape=(84,84),dtype = np.float16))
-        self.observation_space.append(gym.spaces.Box(low=-1, high=1, shape=(6,1),dtype = np.float16))
+        self.observation_space.append(gym.spaces.Box(low=-1, high=1, shape=(200,200),dtype = np.float32))
+        self.observation_space.append(gym.spaces.Box(low=-1, high=1, shape=(84,84),dtype = np.float32))
+        self.observation_space.append(gym.spaces.Box(low=-1, high=1, shape=(6,1),dtype = np.float32))
 
-        self.action_space = gym.spaces.Box(low=-1, high=1, shape=(2,1), dtype = np.float16)
+        self.action_space = gym.spaces.Box(low=-1, high=1, shape=(2,1), dtype = np.float32)
         self.total_reward = 0
         signal.signal(signal.SIGINT, self.signal_handler)
         self.number_of_epsiodes = 0
@@ -129,22 +129,18 @@ class robotEnv():
 
         # creat np arrays as input of the drl agent
         roll, pitch, yaw = self.returnRollPitchYaw(self.goalPose.pose.pose.orientation)
-        goalOrientation = np.asarray([roll, pitch, yaw])
+        goalOrientation = np.asarray([roll, pitch, yaw], dtype=np.float32)
         goalPosition = self.goalPose.pose.pose.position;
-        goalPosition = np.array([goalPosition.x, goalPosition.y, goalPosition.z])
+        goalPosition = np.array([goalPosition.x, goalPosition.y, goalPosition.z], dtype=np.float32)
 
 
-
-        depthData = np.asarray(depthImage)
-        eleviationData = np.asarray(eleviationImage)
-        depthData = depthData.astype('float16')
-        eleviationData = eleviationData.astype('float16')
-
+        eleviationData = np.asarray(eleviationImage, dtype=np.float32)
+        depthData = np.asarray(self.depthData, dtype=np.float32)
 
 
         # norrm input data between -1 and 1
         depthData =  np.divide(depthData,10)
-        eleviationData =  np.divide(eleviationData, 255) #255
+        eleviationData =  np.divide(eleviationData, 65536) #255
         goalOrientation = np.divide(goalOrientation,math.pi)
         goalPosition = np.divide(goalPosition, self.maxDistanz)
 
@@ -152,9 +148,9 @@ class robotEnv():
 
         depthData=np.nan_to_num(depthData)
 
-        eleviationData = np.asarray(eleviationData, dtype=np.float16)
-        depthData = np.asarray(depthData, dtype=np.float16)
-        goalPose = np.asarray(goalPose, dtype=np.float16)
+        eleviationData = np.asarray(eleviationData, dtype=np.float32)
+        depthData = np.asarray(depthData, dtype=np.float32)
+        goalPose = np.asarray(goalPose, dtype=np.float32)
         # replace nan values with 0
 
         eleviationData.reshape(1,200,200)
@@ -317,7 +313,7 @@ class robotEnv():
         self.lastTime = currentTime
 
         self.episodeFinished = EndEpisode
-        reward = np.float16(reward)
+        reward = np.float32(reward)
        # print("reward" + str(reward))
         if(EndEpisode):
             self.explored_last = 0

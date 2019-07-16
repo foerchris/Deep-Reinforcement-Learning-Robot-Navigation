@@ -19,7 +19,7 @@ from hgext.histedit import action
 dirname = os.path.dirname(__file__)
 import sys
 sys.path.append(os.path.join(dirname, 'common'))
-from model import FeatureNetwork, ActorCritic
+from model_icm import FeatureNetwork, ActorCritic, ICMModel
 
 class Agent():
     def __init__(self,state_size_map, state_size_depth , state_size_goal, num_outputs, hidden_size, stack_size, load_model, MODELPATH, learning_rate, mini_batch_size, worker_number, lr_decay_epoch, init_lr, eta = 0.01):
@@ -33,20 +33,23 @@ class Agent():
         self.device   = torch.device("cuda" if use_cuda else "cpu")
         torch.cuda.empty_cache()
         self.summary_writer = tf.summary.FileWriter("train_getjag/ppo/Tensorboard")
-
         self.feature_net = FeatureNetwork(state_size_map*stack_size, state_size_depth * 4, state_size_goal * 4 , hidden_size, stack_size).to(self.device)
+
         self.ac_model = ActorCritic(num_outputs, hidden_size).to(self.device)
+        self.icm_model = ICMModel(num_outputs, hidden_size).to(self.device)
 
         if(load_model):
             self.feature_net.load_state_dict(torch.load(MODELPATH + '/save_ppo_feature_net.dat'))
             self.ac_model.load_state_dict(torch.load(MODELPATH + '/save_ppo_ac_model.dat'))
+            self.icm_model.load_state_dict(torch.load(MODELPATH + '/save_ppo_icm_model.dat'))
         else:
             self.feature_net.apply(self.feature_net.init_weights)
             self.ac_model.apply(self.ac_model.init_weights)
+            self.icm_model.apply(self.icm_model.init_weights)
 
 
-        #self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=learning_rate)
-        self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=learning_rate)
+        #self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()) + list(self.icm_model.parameters()), lr=learning_rate)
+        self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()) + list(self.icm_model.parameters()), lr=learning_rate)
 
 
     def compute_gae(self, next_value, rewards, masks, values, gamma=0.99, tau=0.95):
@@ -66,7 +69,7 @@ class Agent():
         for _ in range(batch_size // self.mini_batch_size):
             rand_ids = np.random.randint(0, batch_size-self.worker_number, self.mini_batch_size)
             #print('map_states[rand_ids, :].shape' + str(map_states[rand_ids, :].shape))
-            yield map_states[rand_ids, :], depth_states[rand_ids, :], goal_states[rand_ids, :], hidden_states_h[rand_ids, :], hidden_states_c[rand_ids, :], map_states[rand_ids+self.worker_number, :], depth_states[rand_ids+self.worker_number, :], goal_states[rand_ids+self.worker_number, :], actions[rand_ids, :], log_probs[rand_ids, :], returns[rand_ids, :], advantage[rand_ids, :], value[rand_ids, :]
+            yield map_states[rand_ids, :], depth_states[rand_ids, :], goal_states[rand_ids, :], hidden_states_h[rand_ids, :], hidden_states_c[rand_ids, :], map_states[rand_ids+self.worker_number, :], depth_states[rand_ids+self.worker_number, :], goal_states[rand_ids+self.worker_number, :], hidden_states_h[rand_ids+self.worker_number, :], hidden_states_c[rand_ids+self.worker_number, :], actions[rand_ids, :], log_probs[rand_ids, :], returns[rand_ids, :], advantage[rand_ids, :], value[rand_ids, :]
 
 
     def ppo_update(self, frame_idx, ppo_epochs, map_states, depth_states, goal_states, hidden_states_h, hidden_states_c, actions, log_probs, returns, advantages, values, epoch, clip_param=0.2, discount=0.5, beta=0.001):
@@ -85,21 +88,42 @@ class Agent():
         #if(lr>=1e-5):
         # lr=1e-5
        # print('learning rate: ' + str(lr))
-        #self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lr)
-        self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lr)
+        #self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()) + list(self.icm_model.parameters()), lr=lr)
+        self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters())+ list(self.icm_model.parameters()), lr=lr)
 
 
 
         # Normalize the advantages
         advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
+        ce = nn.CrossEntropyLoss()
+        forward_mse = nn.MSELoss()
         for _ in range(ppo_epochs):
-            for  map_state, depth_state, goal_state, hidden_state_h, hidden_state_c, next_map_state, next_depth_state, next_goal_state, action, old_log_probs, return_, advantage, old_value in self.ppo_iter(map_states, depth_states, goal_states, hidden_states_h, hidden_states_c, actions, log_probs,
+            for  map_state, depth_state, goal_state, hidden_state_h, hidden_state_c, next_map_state, next_depth_state, next_goal_state, next_hidden_state_h, next_hidden_state_c, action, old_log_probs, return_, advantage, old_value in self.ppo_iter(map_states, depth_states, goal_states, hidden_states_h, hidden_states_c, actions, log_probs,
                                                                             returns, advantages, values):
 
                 hidden_state_h = hidden_state_h.view(1, -1, hidden_state_h.shape[2])
                 hidden_state_c = hidden_state_c.view(1, -1, hidden_state_c.shape[2])
 
+                next_hidden_state_h = next_hidden_state_h.view(1, -1, next_hidden_state_h.shape[2])
+                next_hidden_state_c = next_hidden_state_c.view(1, -1, next_hidden_state_c.shape[2])
+
+                 # --------------------------------------------------------------------------------
+                # for Curiosity-driven
+
+                real_state_feature, _, _ = self.feature_net(map_state, depth_state, goal_state, hidden_state_h, hidden_state_c)
+                real_next_state_feature, _, _ = self.feature_net(next_map_state, next_depth_state, next_goal_state, next_hidden_state_h, next_hidden_state_c)
+
+                pred_next_state_feature, pred_action = self.icm_model(real_state_feature, real_next_state_feature, action)
+
+                #print('action' + str(action.mean))
+                #print('pred_action' + str(pred_action.mean))
+
+                #inverse_loss = ce(pred_action, action.to(torch.long))
+                inverse_loss = forward_mse(pred_action, action.detach())
+
+                forward_loss = forward_mse(pred_next_state_feature, real_next_state_feature.detach())
+                # ---------------------------------------------------------------------------------
 
                 features, _, _ = self.feature_net(map_state, depth_state, goal_state, hidden_state_h, hidden_state_c)
                 dist, value, _ = self.ac_model(features)
@@ -127,7 +151,8 @@ class Agent():
 
                 critic_loss =  .5 * (-torch.min(vf_losses1, vf_losses2).mean())
 
-                loss = discount * critic_loss + actor_loss - beta * entropy
+                loss = discount * critic_loss + actor_loss - beta * entropy + forward_loss + inverse_loss
+                #print('loss' + str(loss))
 
                 self.optimizer.zero_grad()
                 loss.backward()
@@ -148,3 +173,21 @@ class Agent():
         summary.value.add(tag='Perf/sum_loss_total', simple_value=float(sum_loss_total))
         summary.value.add(tag='Perf/sum_entropy', simple_value=float(sum_entropy))
         self.summary_writer.add_summary(summary, frame_idx)
+
+    def compute_intrinsic_reward(self, real_state_feature, real_next_state_feature, action):
+
+        action_onehot = action
+#         action = action.to(torch.long)
+#         action_onehot = torch.FloatTensor(len(action),  action.size(1)).to(self.device)
+#         action_onehot.zero_()
+#         action_onehot.scatter_(1, action.view(len(action), -1), 1)
+
+
+        pred_next_state_feature, pred_action = self.icm_model(real_state_feature, real_next_state_feature, action)
+
+        print('action' + str(action))
+        print('pred_action' + str(pred_action))
+
+
+        intrinsic_reward = self.eta * F.mse_loss(real_next_state_feature, pred_next_state_feature, reduction='none').mean(-1)
+        return intrinsic_reward.data.cpu().numpy()
