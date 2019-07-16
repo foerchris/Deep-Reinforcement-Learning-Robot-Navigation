@@ -211,6 +211,8 @@ class robotEnv():
         _, self.currentPose, self.goalPose, _, _ = self.ic.returnData()
         roll, pitch, yaw = self.returnRollPitchYaw(self.currentPose.pose.pose.orientation)
 
+        angularAccelX = self.ic.imu_data.linear_acceleration.x
+        angularAccelY = self.ic.imu_data.linear_acceleration.y
         currenVel = self.currentPose.twist.twist.linear.x
         self.delta_vel_memory.add(currenVel)
         var_delta_vel = self.delta_vel_memory.var();
@@ -252,16 +254,20 @@ class robotEnv():
         #    reward += 1
         reward = -0.2
 
+        maxAngularAccel = 9
+        if (angularAccelX >= maxAngularAccel or angularAccelY >= maxAngularAccel):
+            reward += -1
+
         tip_over_angle = math.pi/4 + math.pi/8
         if roll>=tip_over_angle or roll<=-tip_over_angle or pitch>=tip_over_angle or pitch<=-tip_over_angle:
-            reward = -1
+            reward = -20
             EndEpisode = True
 
        # if(self.number == 1):
        #     print("var_delta_vel" + str(var_delta_vel))
 
         if (mean_delta_vel <= 1e-2):
-            reward = -1
+            reward = -2
             EndEpisode = True
 
         if currentdistance <= self.deltaDist:

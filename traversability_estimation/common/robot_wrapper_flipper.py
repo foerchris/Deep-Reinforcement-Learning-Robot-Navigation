@@ -14,6 +14,7 @@ from std_msgs.msg import Float64
 
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Bool
+from sensor_msgs.msg import Imu
 
 import matplotlib.pyplot as plt
 
@@ -33,6 +34,7 @@ class image_converter():
         self.VERBOSE = True
         self.robotGroundMap = np.zeros((28, 28), dtype = "uint16")
         self.currentPose = Odometry()
+        self.imu_data = Imu()
 
         self.goalPose = Odometry()
         self.flipperPoseFront = JointState()
@@ -74,7 +76,6 @@ class image_converter():
         self.startStopRobotPub.publish( self.startStopRobot)
         self.robotFlipperFrontPub.publish( self.flipperVelFront)
         self.robotFlipperRearPub.publish( self.flipperVelRear)
-
        # self.countPub +=1
        # if self.countPub % 1000 == 0:
          #   self.countPub = 0
@@ -91,6 +92,10 @@ class image_converter():
     def goalCallback(self, odom_data):
         self.goalPose = odom_data
 
+    # callback to get the goal robot pose as position (x,y,z) and orientation as quaternion (x,y,z,w)
+    def imuCallback(self, imu_data):
+        self.imu_data = imu_data
+
     # return the eleviation map image with [200,200] Pixel and saves it to a global variable
     def robotGroundMapCallback(self, map_data):
         '''Callback function of subscribed topic.
@@ -99,7 +104,9 @@ class image_converter():
             cv_image = self.bridge.imgmsg_to_cv2(map_data)
         except CvBridgeError as e:
             print(e)
-
+        height, width = cv_image.shape
+        if(height == 0 or width == 0):
+           cv_image = np.zeros((28, 28), dtype = "uint16")
         self.robotGroundMap = np.asarray(cv2.resize(cv_image, (28, 28)))
 
 
@@ -125,5 +132,7 @@ class image_converter():
         self.robotGroundMapSub = rospy.Subscriber("/GETjag" + str(self.number) + "/elevation_robot_ground_map", Image,
                                              self.robotGroundMapCallback, queue_size=1)
 
+        self.robotImuCallback = rospy.Subscriber("/GETjag" + str(self.number) + "/imu/data", Imu,
+                                             self.imuCallback, queue_size=1)
     def shoutdown_node(self):
         rospy.signal_shutdown("because reasons")
