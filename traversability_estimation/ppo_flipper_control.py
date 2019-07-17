@@ -38,8 +38,8 @@ from flipper_agents import Agent
 
 MODELPATH = os.path.join(dirname, 'train_getjag/ppo_flipper/Model')
 
-load_model = False
-last_number_of_frames = 0
+load_model = True
+last_number_of_frames = 30000
 frame_idx  = 0 + last_number_of_frames
 num_envs_possible = 16;
 num_envs = 0;
@@ -141,15 +141,15 @@ def plot(frame_idx, rewards):
 
 #Hyper params:
 hidden_size      = 512
-lr               = 1e-3
+lr               = 1e-4
 lr_decay_epoch   = 120.0
 init_lr          = lr
 epoch            = 0.0
 
 max_num_steps    = 250
 num_steps        = 400
-mini_batch_size  = 6
-ppo_epochs       = 4
+mini_batch_size  = 20
+ppo_epochs       = 6
 GAMMA            = 0.99
 GAE_LAMBDA       = 0.95
 PPO_EPSILON      = 0.2
