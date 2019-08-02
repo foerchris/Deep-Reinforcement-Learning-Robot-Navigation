@@ -40,6 +40,7 @@ MODELPATH = os.path.join(dirname, 'train_getjag/ppo/Model')
 
 load_model = False
 last_number_of_frames = 0
+
 frame_idx  = 0 + last_number_of_frames
 num_envs_possible = 16;
 num_envs = 0;
@@ -143,15 +144,15 @@ def plot(frame_idx, rewards):
 
 
 #Hyper params:
-hidden_size      = 576
+hidden_size      = 576*2
 lr               = 1e-3
-lr_decay_epoch   = 120.0
+lr_decay_epoch   = 300.0
 init_lr          = lr
 epoch            = 0.0
 
-max_num_steps    = 500
-num_steps        = 400
-mini_batch_size  = 6
+max_num_steps    = 300
+num_steps        = 1000
+mini_batch_size  = 100
 ppo_epochs       = 4
 GAMMA            = 0.99
 GAE_LAMBDA       = 0.95
@@ -162,6 +163,28 @@ eta              = 0.01
 threshold_reward = 5
 #
 
+
+f= open("train_getjag/ppo/Tensorboard/Hyperparameters.txt","w+")
+
+f.write("Navigation Control")
+f.write("\n hidden_size: " + str(hidden_size))
+f.write("\n lr: " + str(lr))
+f.write("\n lr_decay_epoch: " + str(lr_decay_epoch))
+f.write("\n init_lr: " + str(init_lr))
+f.write("\n epoch: " + str(epoch))
+f.write("\n max_num_steps: " + str(max_num_steps))
+f.write("\n num_steps: " + str(num_steps))
+f.write("\n mini_batch_size: " + str(mini_batch_size))
+f.write("\n ppo_epochs: " + str(ppo_epochs))
+f.write("\n GAMMA: " + str(GAMMA))
+f.write("\n GAE_LAMBDA: " + str(GAE_LAMBDA))
+f.write("\n PPO_EPSILON: " + str(PPO_EPSILON))
+f.write("\n CRICIC_DISCOUNT: " + str(CRICIC_DISCOUNT))
+f.write("\n ENTROPY_BETA: " + str(ENTROPY_BETA))
+f.write("\n eta: " + str(eta))
+f.write("\n LSTM: Yes")
+f.write("\n Architecture: 1")
+f.close()
 
 agent = Agent(state_size_map, state_size_depth , state_size_goal, num_outputs, hidden_size, stack_size, load_model, MODELPATH, lr, mini_batch_size, num_envs, lr_decay_epoch, init_lr, eta)
 max_frames = 500000
@@ -197,6 +220,11 @@ total_reward = []
 total_total_reward = []
 total_step_count = []
 total_std = []
+number_of_episodes = 0
+number_reached_goal = 0
+reach_goal = []
+entropy = 0
+
 for i in range(0, num_envs):
     done_cache.append(False)
     step_count.append(0)
@@ -214,13 +242,10 @@ while frame_idx < max_frames and not early_stop:
     actions = []
     rewards = []
     masks = []
-    entropy = 0
+
 
     agent.feature_net.eval()
     agent.ac_model.eval()
-    total_reward_worker1 = []
-    for i in range(0, num_envs):
-        total_reward_worker1.append(0)
 
     with torch.no_grad():
         for _ in range(num_steps):
@@ -250,6 +275,17 @@ while frame_idx < max_frames and not early_stop:
 
             for i in range(0, num_envs):
                 if (done[i] == True):
+                   # print("number_of_episodes" + str(number_of_episodes))
+                   # print("number_reached_goal" + str(number_reached_goal))
+
+                    number_of_episodes += 1
+                    if (reward[i] >= 0.2):
+                        number_reached_goal += 1
+                        #print(str(number)+"reached goal")
+                        reach_goal.append(1)
+                    else:
+                        reach_goal.append(0)
+
                     _, stacked_map_frames = reset_single_frame(stacked_map_frames, next_map_state[i], stack_size, i)
                     _, stacked_depth_frames = reset_single_frame(stacked_depth_frames, next_depth_state[i], stack_size,
                                                                  i)
@@ -258,13 +294,13 @@ while frame_idx < max_frames and not early_stop:
                     (single_hidden_state_h, single_hidden_state_c) = agent.feature_net.init_hidden(1)
                     next_hidden_state_h[0][i] = single_hidden_state_h
                     next_hidden_state_c[0][i] = single_hidden_state_c
-
-
-
+                   # print("number_of_episodes" + str(number_of_episodes))
+                   # print("number_reached_goal" + str(number_reached_goal))
 
             next_map_state, stacked_map_frames = stack_frames(stacked_map_frames,next_map_state,stack_size, False)
             next_depth_state, stacked_depth_frames = stack_frames(stacked_depth_frames,next_depth_state,stack_size, False)
             next_goal_state, stacked_goal_frames = stack_frames(stacked_goal_frames,next_goal_state,stack_size, False)
+
 
             next_features, _, _ = agent.feature_net(torch.FloatTensor(next_map_state).to(device), torch.FloatTensor(next_depth_state).to(device) , torch.FloatTensor(next_goal_state).to(device), next_hidden_state_h, next_hidden_state_h)
 
@@ -310,21 +346,6 @@ while frame_idx < max_frames and not early_stop:
             frame_idx += 1
 
             if frame_idx % 2000 == 0:
-                #mean_test_rewards = []
-                #mean_test_lenghts = []
-                #mean_test_log_probs = []
-                #mean_test_values = []
-                #mean_test_entropy = []
-                #print("test env")
-
-                #for _ in range(5):
-                #    test_reward, test_lenght, test_log_probs, test_values, test_entropy = multi_test_env()
-
-                #    mean_test_rewards.append( np.mean(test_reward))
-                 #   mean_test_lenghts.append( np.mean(test_lenght))
-                 #   mean_test_log_probs.append(np.mean(test_log_probs))
-                 #   mean_test_values.append(np.mean(test_values))
-                #    mean_test_entropy.append(test_entropy)
 
                 mean_test_rewards = np.mean(total_total_reward)
                 total_total_reward = []
@@ -332,21 +353,24 @@ while frame_idx < max_frames and not early_stop:
                 total_step_count = []
                 mean_total_std = np.mean(total_std)
                 total_std = []
-                #mean_test_log_probs = np.mean(mean_test_log_probs)
-                #mean_test_values = np.mean(mean_test_values)
-                #mean_test_entropy = np.mean(mean_test_entropy)
+                mean_reach_goal = np.mean(reach_goal)
+                reach_goal = []
+
 
                 test_rewards.append(mean_test_rewards)
-                print("update tensorboard")
-                #plot(frame_idx, test_rewards)
+                print("save tensorboard")
+                # plot(frame_idx, test_rewards)
                 summary = tf.Summary()
-                summary.value.add(tag='Perf/mean_test_rewards', simple_value=float(mean_test_rewards))
-                summary.value.add(tag='Perf/mean_test_lenghts', simple_value=float(mean_test_lenghts))
-                summary.value.add(tag='Perf/mean_total_std', simple_value=float(mean_total_std))
+                summary.value.add(tag='Mittelwert/Belohnungen', simple_value=float(mean_test_rewards))
+                summary.value.add(tag='Mittelwert/Epsioden Länge', simple_value=float(mean_test_lenghts))
+                summary.value.add(tag='Mittelwert/Std-Abweichung', simple_value=float(mean_total_std))
+                summary.value.add(tag='Mittelwert/Ziel erreich', simple_value=float(mean_reach_goal))
+                summary.value.add(tag='Mittelwert/Ziel erreicht_Test', simple_value=float(number_reached_goal/number_of_episodes))
+                summary.value.add(tag='Mittelwert/anzahl Episoden', simple_value=float(number_of_episodes))
+                number_of_episodes = 0
+                summary.value.add(tag='Mittelwert/anzahl Ziel erreicht', simple_value=float(number_reached_goal))
+                number_reached_goal = 0
 
-                #summary.value.add(tag='Perf/mean_test_log_probs', simple_value=float(mean_test_log_probs))
-                #summary.value.add(tag='Perf/mean_test_values', simple_value=float(mean_test_values))
-                #summary.value.add(tag='Perf/mean_test_entropy', simple_value=float(mean_test_entropy))
                 summary_writer.add_summary(summary, frame_idx)
 
                 for name, param in agent.feature_net.named_parameters():
@@ -361,14 +385,14 @@ while frame_idx < max_frames and not early_stop:
                         tensor = tensor.cpu().numpy()
                         writer.add_histogram(name, tensor, bins='doane')
 
-                print("updated tensorboard")
+                print("save weights")
 
                 if best_reward is None or best_reward < mean_test_rewards:
                     if best_reward is not None:
                         print("Best reward updated: %.3f -> %.3f" % (best_reward, mean_test_rewards))
                         name = "%s_best_%+.3f_%d.dat" % ('ppo_robot_nav', mean_test_rewards, frame_idx)
-                        #fname = os.path.join('.', 'checkpoints', name)
-                        #torch.save(agent.ac_model.state_dict(), MODELPATH + name)
+                        torch.save(agent.feature_net.state_dict(), MODELPATH + '/save_ppo_feature_net_best_reward.dat')
+                        torch.save(agent.ac_model.state_dict(), MODELPATH + '/save_ppo_ac_model_best_reward.dat')
                     best_reward = mean_test_rewards
 
                 if mean_test_rewards > threshold_reward: early_stop = True
@@ -410,3 +434,133 @@ while frame_idx < max_frames and not early_stop:
     epoch += 1.0
     agent.ppo_update(frame_idx, ppo_epochs,  map_states, depth_states, goal_states, hidden_states_h, hidden_states_c , actions, log_probs, returns, advantages, values, epoch, PPO_EPSILON, CRICIC_DISCOUNT, ENTROPY_BETA)
 
+
+
+map_state,depth_state, goal_state = envs.reset()
+
+map_state, stacked_map_frames = stack_frames(stacked_map_frames, map_state, stack_size, True)
+depth_state, stacked_depth_frames = stack_frames(stacked_depth_frames, depth_state, stack_size, True)
+goal_state, stacked_goal_frames = stack_frames(stacked_goal_frames, goal_state, stack_size, True)
+
+agent.feature_net.hidden = agent.feature_net.init_hidden(num_envs)
+(hidden_state_h, hidden_state_c) = agent.feature_net.hidden
+
+done_cache = []
+step_count = []
+total_reward = []
+total_total_reward = []
+total_step_count = []
+total_std = []
+number_of_episodes = 0
+number_reached_goal = 0
+reach_goal = []
+entropy = 0
+
+agent.feature_net.eval()
+agent.ac_model.eval()
+eval_steps = 6000
+steps_idx = 0
+
+while frame_idx < eval_steps :
+    with torch.no_grad():
+        for _ in range(num_steps):
+
+
+            map_state = torch.FloatTensor(map_state).to(device)
+            depth_state = torch.FloatTensor(depth_state).to(device)
+            goal_state = torch.FloatTensor(goal_state).to(device)
+
+
+
+            features, next_hidden_state_h, next_hidden_state_c = agent.feature_net(map_state, depth_state, goal_state, hidden_state_h, hidden_state_c)
+
+            dist, value, std  = agent.ac_model( features)
+
+            total_std.append(std.cpu().numpy())
+
+
+            action = dist.mean.detach()
+            print("action" + str(action))
+            action = dist.mean.detach()
+            print("action" + str(action))
+
+            # this is a x,1 tensor is kontains alle the possible actions
+            # the cpu command move it from a gpu tensor to a cpu tensor
+            next_map_state, next_depth_state, next_goal_state, reward, done, _ = envs.step(action.cpu().numpy())
+
+
+            for i in range(0, num_envs):
+                if (done[i] == True):
+
+                    number_of_episodes += 1
+                    if (reward[i] >= 0.2):
+                        number_reached_goal += 1
+                        reach_goal.append(1)
+                    else:
+                        reach_goal.append(0)
+
+                    _, stacked_map_frames = reset_single_frame(stacked_map_frames, next_map_state[i], stack_size, i)
+                    _, stacked_depth_frames = reset_single_frame(stacked_depth_frames, next_depth_state[i], stack_size,
+                                                                 i)
+                    _, stacked_goal_frames = reset_single_frame(stacked_goal_frames, next_goal_state[i], stack_size, i)
+
+                    (single_hidden_state_h, single_hidden_state_c) = agent.feature_net.init_hidden(1)
+                    next_hidden_state_h[0][i] = single_hidden_state_h
+                    next_hidden_state_c[0][i] = single_hidden_state_c
+
+            next_map_state, stacked_map_frames = stack_frames(stacked_map_frames,next_map_state,stack_size, False)
+            next_depth_state, stacked_depth_frames = stack_frames(stacked_depth_frames,next_depth_state,stack_size, False)
+            next_goal_state, stacked_goal_frames = stack_frames(stacked_goal_frames,next_goal_state,stack_size, False)
+
+
+            next_features, _, _ = agent.feature_net(torch.FloatTensor(next_map_state).to(device), torch.FloatTensor(next_depth_state).to(device) , torch.FloatTensor(next_goal_state).to(device), next_hidden_state_h, next_hidden_state_h)
+
+            total_reward += reward
+
+            for i in range(0, num_envs):
+                step_count[i] += 1
+                if (done[i] == True):
+                    total_step_count.append(step_count[i])
+                    step_count[i] = 0
+                    total_total_reward.append(total_reward[i])
+                    total_reward[i] = 0
+
+            map_state = next_map_state
+            depth_state = next_depth_state
+            goal_state = next_goal_state
+
+            #torch.cuda.empty_cache()
+            steps_idx += 1
+
+
+            next_map_state = torch.FloatTensor(next_map_state).to(device)
+            next_depth_state = torch.FloatTensor(next_depth_state).to(device)
+            next_goal_state = torch.FloatTensor(next_goal_state).to(device)
+
+            hidden_state_h = next_hidden_state_h
+            hidden_state_c = next_hidden_state_c
+
+mean_test_rewards = np.mean(total_total_reward)
+total_total_reward = []
+mean_test_lenghts = np.mean(total_step_count)
+total_step_count = []
+mean_total_std = np.mean(total_std)
+total_std = []
+mean_reach_goal = np.mean(reach_goal)
+reach_goal = []
+
+test_rewards.append(mean_test_rewards)
+print("save tensorboard")
+# plot(frame_idx, test_rewards)
+summary = tf.Summary()
+summary.value.add(tag='Mittelwert/Belohnungen', simple_value=float(mean_test_rewards))
+summary.value.add(tag='Mittelwert/Epsioden Länge', simple_value=float(mean_test_lenghts))
+summary.value.add(tag='Mittelwert/Std-Abweichung', simple_value=float(mean_total_std))
+summary.value.add(tag='Mittelwert/Ziel erreich', simple_value=float(mean_reach_goal))
+summary.value.add(tag='Mittelwert/Ziel erreicht_Test', simple_value=float(number_reached_goal/number_of_episodes))
+summary.value.add(tag='Mittelwert/anzahl Episoden', simple_value=float(number_of_episodes))
+number_of_episodes = 0
+summary.value.add(tag='Mittelwert/anzahl Ziel erreicht', simple_value=float(number_reached_goal))
+number_reached_goal = 0
+
+summary_writer.add_summary(summary, frame_idx + steps_idx)

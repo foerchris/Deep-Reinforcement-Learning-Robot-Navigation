@@ -15,7 +15,6 @@ import tensorflow as tf
 from tensorboardX import SummaryWriter
 
 import os
-from hgext.histedit import action
 dirname = os.path.dirname(__file__)
 import sys
 sys.path.append(os.path.join(dirname, 'common'))
@@ -34,7 +33,7 @@ class Agent():
         torch.cuda.empty_cache()
         self.summary_writer = tf.summary.FileWriter("train_getjag/ppo/Tensorboard")
 
-        self.feature_net = FeatureNetwork(state_size_map*stack_size, state_size_depth * 4, state_size_goal * 4 , hidden_size, stack_size).to(self.device)
+        self.feature_net = FeatureNetwork(state_size_map*stack_size, state_size_depth * stack_size, state_size_goal * stack_size, hidden_size, stack_size).to(self.device)
         self.ac_model = ActorCritic(num_outputs, hidden_size).to(self.device)
 
         if(load_model):
@@ -86,7 +85,7 @@ class Agent():
         # lr=1e-5
        # print('learning rate: ' + str(lr))
         #self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lr)
-        self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lr)
+        #self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lr)
 
 
 

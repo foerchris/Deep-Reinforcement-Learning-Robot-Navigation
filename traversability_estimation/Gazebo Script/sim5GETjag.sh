@@ -26,7 +26,7 @@ WORKERNUMBER="0"
 NUMBEROFWORKERS="4"
 namespace="GETjag"
 tf_prefix="GETjag"
-world="DrlWorld5Robots.world"
+world="DrlWorld5RobotsWithObjects.world"
 simulator="false"
 startdrlagent="false"
 drlagentStartet="false"
@@ -80,7 +80,7 @@ do
 	CANEXIT=0 
 	#reset watchdog
 	echo -e "[$(date +"%T")]: ${GREEN}Starting gazebo with world: ${NC}$world"
-	roslaunch get_gazebo_worlds getjag0.launch world:=$world gui:=$simulator > output_gazebo.txt 2>&1 &
+	roslaunch get_gazebo_worlds getjag5.launch world:=$world gui:=$simulator > output_gazebo.txt 2>&1 &
 	PIDs+=($!)
 	sleep 10
 	STARTTIME=$(date +%s.%N)
@@ -104,21 +104,23 @@ do
 				rosparam set "/GETjag$i/Error_in_simulator" true
 				rosparam set "/GETjag$i/Ready_to_Start_DRL_Agent" false
 
-				echo -e "[$(date +"%T")] Error in simulator${NC}"
+				echo -e "[$(date +"%T")] Error in simulator${NC} Unable to set value "
 				i=5
 				CANEXIT=3
 				PIDs+=($!)
-				
+				sleep 0.5
+
 			elif (grep -q "Segmentation fault" output_gazebo.txt); then
 			
 				rosparam set "/GETjag$i/Error_in_simulator" true
 				rosparam set "/GETjag$i/Ready_to_Start_DRL_Agent" false
 
-				echo -e "[$(date +"%T")] Error in simulator${NC}"
+				echo -e "[$(date +"%T")] Error in simulator${NC}: Segmentation fault"
 				i=5
 				CANEXIT=3
 				PIDs+=($!)
-				
+				sleep 0.5
+
 			elif  ($(rosparam get /GETjag$i/End_of_enviroment)); then
 							
 				echo -e "[$(date +"%T")]: End reached, close the enviroment${NC}!"

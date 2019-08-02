@@ -50,7 +50,7 @@ class FeatureNetwork(nn.Module):
 
         # This is the depth Image part
         self.cnn_depth = nn.Sequential(
-            nn.Conv2d(in_channels=stack_size*4, out_channels=32, kernel_size=5, stride=1, padding=2),
+            nn.Conv2d(in_channels=stack_size, out_channels=32, kernel_size=5, stride=1, padding=2),
             nn.ReLU(),
             nn.MaxPool2d(2,stride=2),
             nn.Conv2d(in_channels=32, out_channels=32, kernel_size=5, stride=1, padding=1),
@@ -76,7 +76,7 @@ class FeatureNetwork(nn.Module):
             nn.MaxPool2d(2, stride=2)
         )
 
-        self.lstm = nn.LSTM(hidden_size*2, hidden_size, num_layers=1)
+        self.lstm = nn.LSTM(hidden_size, hidden_size, num_layers=1)
 
         #self.hidden = self.init_hidden()
     def init_weights(self,m):
@@ -119,6 +119,24 @@ class FeatureNetwork(nn.Module):
        # plt.imshow(map_state[0][0].cpu().numpy() ,cmap="gray")
         #plt.show()
         map = self.cnn_map(map_state)
+        # print("goal_state"+str(goal_state))
+        # print("goal_state[0][0]"+str(goal_state[0][0]))
+        #
+        # orientation = goal_state[0][0].cpu().numpy()
+        # position = orientation[:3]
+        # print("position"+str(position))
+        #
+        # orientation = orientation[3:]
+        # print("orientation"+str(orientation))
+        # position = np.multiply(position,10)
+        # print("position"+str(position))
+        #
+        # bla = np.multiply(orientation,math.pi)
+        # print("orientation_state"+str(bla/math.pi*180.0))
+        # plt.imshow(map_state[0][0].cpu().numpy(),cmap="gray")
+        # plt.show()
+        #robotGroundMap =  np.multiply(map_state[0][0].cpu().numpy(), 2e8) #255
+
 
         goal_state = goal_state.view(-1, goal_state.shape[1]* goal_state.shape[2])
 
@@ -156,6 +174,7 @@ class FeatureNetwork(nn.Module):
 
         hidden_h = self.hidden[0]
         hidden_c = self.hidden[1]
+        map_goal_depth = map_goal_depth.view(-1, map_goal_depth.shape[2])
 
         return lstm_out, hidden_h.detach(), hidden_c.detach()
 

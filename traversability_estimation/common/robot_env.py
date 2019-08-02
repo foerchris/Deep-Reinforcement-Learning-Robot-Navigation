@@ -45,7 +45,7 @@ class robotEnv():
         self.episodeFinished = False
         # Variables to calculate the reward
         self.deltaDist = 0.20
-        self.discountFactorMue = 20
+        self.discountFactorMue = 0.3
         self.closestDistance = 0
         self.startGoalDistance = 0
         self.lastDistance = 0
@@ -56,6 +56,10 @@ class robotEnv():
         self.delta_x_memory = Memory(10)
         self.delta_y_memory = Memory(10)
         self.delta_vel_memory = Memory(10)
+
+
+        self.delta_set_vel_lin_memory = Memory(10)
+        self.delta_set_vel_angl_memory = Memory(10)
 
         self.observation_space = []
         self.observation_space.append(gym.spaces.Box(low=-1, high=1, shape=(200,200),dtype = np.float32))
@@ -81,6 +85,8 @@ class robotEnv():
 
         self.msg.attach(part2)
 
+        self.countResetZeroVel = 0
+
     def set_episode_length(self,EpisodeLength):
         self.EpisodeLength = EpisodeLength
 
@@ -93,7 +99,9 @@ class robotEnv():
 
         #if(self.number ==1):
           #  print("action:" + str(action))
-        self.ic.setAction(action)
+        lin, angl = self.ic.setAction(action)
+        self.delta_set_vel_lin_memory.add(lin);
+        self.delta_set_vel_angl_memory.add(angl);
         self.stepCounter += 1
 
         sleep(0.3)
@@ -128,14 +136,17 @@ class robotEnv():
         depthImage, eleviationImage, self.currentPose, self.goalPose= self.ic.returnData()
 
         # creat np arrays as input of the drl agent
-        roll, pitch, yaw = self.returnRollPitchYaw(self.goalPose.pose.pose.orientation)
+
+        roll, pitch, yaw = self.clcRPYGoalPose(self.goalPose.pose.pose.position)
+
         goalOrientation = np.asarray([roll, pitch, yaw], dtype=np.float32)
         goalPosition = self.goalPose.pose.pose.position;
         goalPosition = np.array([goalPosition.x, goalPosition.y, goalPosition.z], dtype=np.float32)
 
 
+
         eleviationData = np.asarray(eleviationImage, dtype=np.float32)
-        depthData = np.asarray(self.depthData, dtype=np.float32)
+        depthData = np.asarray(depthImage, dtype=np.float32)
 
 
         # norrm input data between -1 and 1
@@ -143,6 +154,7 @@ class robotEnv():
         eleviationData =  np.divide(eleviationData, 65536) #255
         goalOrientation = np.divide(goalOrientation,math.pi)
         goalPosition = np.divide(goalPosition, self.maxDistanz)
+
 
         goalPose = np.concatenate((goalPosition, goalOrientation), axis=None)
 
@@ -175,7 +187,8 @@ class robotEnv():
         self.delta_x_memory.resetBuffer()
         self.delta_y_memory.resetBuffer()
         self.delta_vel_memory.resetBuffer()
-
+        self.delta_set_vel_lin_memory.resetBuffer();
+        self.delta_set_vel_angl_memory.resetBuffer();
         # repead until the robot is in a valite starting position
         count_valied_state = 0
         while valiedEnv == False:
@@ -192,7 +205,7 @@ class robotEnv():
                 if Ready:
                     waitForReset = True
                 count_reset += 1
-                if(count_reset%100 == 0):
+                if(count_reset%1000 == 0):
                     s = smtplib.SMTP_SSL('smtp.gmail.com')
                     s.login(self.me, self.my_password)
                     s.sendmail(self.me, self.you, self.msg.as_string())
@@ -210,7 +223,7 @@ class robotEnv():
                 valiedEnv = True
                 sleep(0.2)
             count_valied_state +=1
-            if (count_valied_state % 100 == 0):
+            if (count_valied_state % 1000 == 0):
                 s = smtplib.SMTP_SSL('smtp.gmail.com')
                 s.login(self.me, self.my_password)
                 s.sendmail(self.me, self.you, self.msg.as_string())
@@ -242,12 +255,12 @@ class robotEnv():
         self.delta_x_memory.add(self.currentPose.pose.pose.position.x)
         self.delta_y_memory.add(self.currentPose.pose.pose.position.y)
 
-        self.delta_vel_memory.add(currenVel)
+        self.delta_vel_memory.add(abs(currenVel))
 
         var_delta_x = self.delta_x_memory.var();
         var_delta_y = self.delta_y_memory.var();
 
-        var_delta_vel = self.delta_vel_memory.var();
+        mean_delta_vel = self.delta_vel_memory.mean();
 
         EndEpisode = False;
         reward=0
@@ -256,13 +269,20 @@ class robotEnv():
             EndEpisode = True
 
             rospy.set_param("/GETjag"+ str(self.number) + "/Error_in_simulator",False)
+      #  if(self.number == 1):
+           # print("self.closestDistance" + str(self.closestDistance))
+           # print("currentdistance" + str(currentdistance))
 
         if currentdistance < self.closestDistance:
-            reward = self.discountFactorMue*(self.closestDistance-currentdistance)/deltaTime
+            reward = self.discountFactorMue*(self.closestDistance-currentdistance)
             self.closestDistance = currentdistance
+            #if (self.number == 1):
+             #   print("currentdistance < self.closestDistance reward:" + str(reward))
 
-        elif currentdistance <= self.lastDistance:
-            reward = 0.5 + (self.startGoalDistance / currentTime)
+        #if(self.number ==1):
+          #  print("reward" + str(reward))
+        #elif currentdistance <= self.lastDistance:
+         #   reward = 0.5 + (self.startGoalDistance / currentTime)
 
 #         explored = (eleviationImage > 100).sum()
 #         if (explored > self.explored_last):
@@ -281,21 +301,28 @@ class robotEnv():
         if roll>=math.pi/4 or roll<=-math.pi/4 or pitch>=math.pi/4 or pitch<=-math.pi/4:
             reward = -0.5
             EndEpisode = True
+            self.countResetZeroVel = 0
+
 
        # if(self.number == 1):
        #     print("var_delta_vel" + str(var_delta_vel))
 
        # if (var_delta_x <= 1e-2 and var_delta_y <= 1e-2):
-        if (var_delta_vel <= 1e-2):
-             reward = -0.5
-             EndEpisode = True
+        if (mean_delta_vel <= 1e-2):
+           # if(self.number == 1):
+               # print("mean_delta_vel" + str(mean_delta_vel))
+               # print("self.delta_set_vel_lin_memory Array" + str(self.delta_set_vel_lin_memory.returnNumpyArray()))
+              #  print("self.delta_vel_memory Array" + str(self.delta_vel_memory.returnNumpyArray()))
+
+            reward = -0.5
+            EndEpisode = True
+            self.countResetZeroVel +=1
 
         if currentdistance <= self.deltaDist:
-            reward = 100
-            text_file = open("a3c_results.txt", "a")
-            text_file.write(str(self.number) + 'reached Goal\n')
-            text_file.write(str(self.number) + 'reached Goal\n')
-            text_file.close()
+            ##reward = 100
+            reward = 0.5 + (self.startGoalDistance*10 / self.stepCounter)
+            if (self.number == 1):
+                print("currentdistance <= self.deltaDist:" + str(reward))
             print("reached Goal")
             EndEpisode = True
             self.number_reached_goal
@@ -303,9 +330,17 @@ class robotEnv():
 
         if  self.stepCounter>=self.EpisodeLength:
             EndEpisode = True
+            self.countResetZeroVel = 0
+
+        if(self.countResetZeroVel > 10):
+            print(self.countResetZeroVel)
+            self.countResetZeroVel = 0
+            rospy.set_param("/GETjag"+ str(self.number) + "/Error_in_simulator",True)
+
+
 
         #print("current reward: " + str(reward))
-        reward = reward*0.01
+        #reward = reward*0.01
         #reward = reward*0.001
         #if(self.number == 1):
             #print("reward for step: " + str(reward))
@@ -329,6 +364,29 @@ class robotEnv():
         #rospy.set_param("/GETjag/End_of_enviroment",True)
         rospy.set_param("/GETjag"+ str(self.number) + "/End_of_enviroment",True)
 
+    def clcRPYGoalPose(self, goalPose):
+        #roll = self.clcAngle(goalPose.x,goalPose.z)
+        #pitch = self.clcAngle(goalPose.y,goalPose.z)
+        yaw = self.clcAngle(goalPose.x,goalPose.y)
+        roll = math.atan(goalPose.z/goalPose.x)
+        pitch = math.atan(goalPose.z/goalPose.y)
+       # yaw =math.atan(goalPose.y/goalPose.x)
+        return roll,pitch,yaw
+
+
+    def clcAngle(self,v1, v2):
+        if (v1 > 0):
+            return math.atan(v2 / v1)
+        elif (v1 < 0 and v2 < 0):
+            return -math.pi / 2.0 - (math.pi / 2.0 - math.atan(v2 / v1))
+        elif (v1 < 0 and v2 > 0):
+            return math.pi / 2.0 + math.pi / 2 + math.atan(v2 / v1)
+        elif (v2 == 0):
+            return 0
+        elif (v2 < 0):
+            return math.pi / 2
+        else:
+            return -math.pi / 2
     def returnRollPitchYaw(self, orientation):
         orientation_list = [orientation.x, orientation.y, orientation.z, orientation.w]
         return  euler_from_quaternion(orientation_list)
@@ -371,4 +429,7 @@ class Memory():
             return np.var(self.buffer)
         else:
             return 0.02
+
+    def returnNumpyArray(self):
+        return np.asarray(self.buffer)
 

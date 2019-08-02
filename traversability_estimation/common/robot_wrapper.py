@@ -63,6 +63,7 @@ class image_converter():
 
         self.velocities.linear.x = action[0]
         self.velocities.angular.z = action[1]
+        return  self.velocities.linear.x, self.velocities.angular.z
 
     # callback to get the current robot pose as position (x,y,z) and orientation as quaternion (x,y,z,w)
     # also transmits the robot action as velocities

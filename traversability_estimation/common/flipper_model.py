@@ -91,10 +91,11 @@ class FeatureNetwork(nn.Module):
 
         self.hidden = (hidden_h, hidden_c)
 
-       # plt.imshow(map_state[0][0].cpu().numpy(),cmap="gray")
-       # plt.show()
+        #plt.imshow(map_state[0][0].cpu().numpy(),cmap="gray")
+        #plt.show()
         #robotGroundMap =  np.multiply(map_state[0][0].cpu().numpy(), 2e8) #255
-
+        #bla = np.multiply(orientation_state[0][0],math.pi)
+        #print("orientation_state"+str(bla/math.pi*180.0))
         #cv2.imshow('image',robotGroundMap)
         #cv2.waitKey(2)
         map = self.cnn_map(map_state)

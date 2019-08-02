@@ -1,0 +1,31 @@
+
+*** These modified files were found in JOE when it aborted on Wed Jul 17 10:18:33 2019
+*** JOE was aborted because the terminal closed
+
+*** Datei '/home/chfo/Dropbox/Masterarbeit/python code/.git/MERGE_MSG'
+'darum'Merge branch 'master' of https://github.com/foerchris/traverability
+
+# Bitte geben Sie eine Commit-Beschreibung ein, um zu erklären, warum dieser
+# Merge erforderlich ist, insbesondere wenn es einen aktualisierten
+# Upstream-Branch mit einem Thema-Branch zusammenführt.
+#
+# Zeilen beginnend mit '#' werden ignoriert, und eine leere Beschreibung
+# bricht den Commit ab.
+*** Datei '(Unbenannt)'
+/home/chfo/Dropbox/Masterarbeit/python code/.git/COMMIT_EDITMSG
+/home/chfo/Dropbox/Masterarbeit/python code/.git/COMMIT_EDITMSG
+/home/chfo/getbot/ros/robocup/.git/COMMIT_EDITMSG
+/home/chfo/Dropbox/Masterarbeit/python code/.git/COMMIT_EDITMSG
+/home/chfo/Dropbox/Masterarbeit/python code/.git/COMMIT_EDITMSG
+/home/chfo/Dropbox/Masterarbeit/python code/.git/COMMIT_EDITMSG
+/home/chfo/Dropbox/Masterarbeit/python code/.git/COMMIT_EDITMSG
+/home/chfo/Dropbox/Masterarbeit/python code/.git/COMMIT_EDITMSG
+/home/chfo/getbot/ros/robocup/.git/COMMIT_EDITMSG
+/home/chfo/Dropbox/Masterarbeit/python code/.git/COMMIT_EDITMSG
+/home/chfo/Dropbox/Masterarbeit/python code/.git/MERGE_MSG
+
+*** Datei '* Startup Log *'
+Processing '/etc/joe/editorrc'...
+Processing '/etc/joe/ftyperc'...
+Finished processing /etc/joe/ftyperc
+Finished processing /etc/joe/editorrc
