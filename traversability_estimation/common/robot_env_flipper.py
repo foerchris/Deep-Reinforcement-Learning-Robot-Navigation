@@ -46,12 +46,12 @@ class robotEnv():
         self.episodeFinished = False
         # Variables to calculate the reward
         self.deltaDist = 0.20
-        self.discountFactorMue = 20
+        self.discountFactorMue = 0.1
         self.closestDistance = 0
         self.startGoalDistance = 0
         self.lastDistance = 0
         self.startTime =0
-        self.delta_vel_memory = Memory(20)
+        self.delta_vel_memory = Memory(10)
 
         self.lastTime = 0
 
@@ -62,8 +62,7 @@ class robotEnv():
         self.action_space = gym.spaces.Box(low=-1, high=1, shape=(2,1), dtype = np.float32)
         self.total_reward = 0
         signal.signal(signal.SIGINT, self.signal_handler)
-        self.number_of_epsiodes = 0
-        self.number_reached_goal = 0
+
         self.me = "forpythontest2@gmail.com"
         self.my_password = r"rutWXjJkPItlmGwRYB9J"
         self.you = "chrf@notes.upb.de"
@@ -128,10 +127,10 @@ class robotEnv():
         robotGroundMap =  np.divide(robotGroundMap, 65536) #255
 
         currentOrientation = np.divide(currentOrientation,math.pi)
-        currentOrientation = np.append(currentOrientation, self.flipperPoseFront.current_pos/m.pi)
-        currentOrientation = np.append(currentOrientation, self.flipperPoseRear.current_pos/m.pi)
-        currentOrientation = np.append(currentOrientation, self.currentPose.twist.twist.linear.x)
-        currentOrientation = np.append(currentOrientation, self.currentPose.twist.twist.angular.z)
+        currentOrientation = np.append(currentOrientation, np.divide(self.flipperPoseFront.current_pos,m.pi))
+        currentOrientation = np.append(currentOrientation, np.divide(self.flipperPoseRear.current_pos,m.pi))
+        currentOrientation = np.append(currentOrientation, np.divide(self.ic.imu_data.linear_acceleration.x,20))
+        currentOrientation = np.append(currentOrientation, np.divide(self.ic.imu_data.linear_acceleration.y,20))
 
         #print("currentOrientation" + str(currentOrientation))
         robotGroundMap = np.asarray(robotGroundMap, dtype=np.float32  )
@@ -180,6 +179,8 @@ class robotEnv():
                     s.sendmail(self.me, self.you, self.msg.as_string())
                     s.quit()
                     print("worker_" + str(self.number) + " stucked at waiting for Ready_to_Start_DRL_agent");
+
+
                 sleep(0.2)
 
             _, self.currentPose, self.goalPose, _, _ = self.ic.returnData()
@@ -203,16 +204,15 @@ class robotEnv():
         self.lastTime = self.startTime
 
         sleep(0.2)
-        self.number_of_epsiodes += 1
+        self.ic.acceleration_to_high = False
+        self.ic.robot_flip_over = False
+
         return self.get_state()
 
 
     def clcReward(self):
         _, self.currentPose, self.goalPose, _, _ = self.ic.returnData()
-        roll, pitch, yaw = self.returnRollPitchYaw(self.currentPose.pose.pose.orientation)
 
-        angularAccelX = self.ic.imu_data.linear_acceleration.x
-        angularAccelY = self.ic.imu_data.linear_acceleration.y
         currenVel = self.currentPose.twist.twist.linear.x
         self.delta_vel_memory.add(currenVel)
         var_delta_vel = self.delta_vel_memory.var();
@@ -229,72 +229,49 @@ class robotEnv():
 
         if rospy.get_param("/GETjag"+ str(self.number) + "/Error_in_simulator"):
             EndEpisode = True
-
             rospy.set_param("/GETjag"+ str(self.number) + "/Error_in_simulator",False)
 
-        #if currentdistance < self.closestDistance:
-         #   reward = self.discountFactorMue*(self.closestDistance-currentdistance)/deltaTime
-         #   self.closestDistance = currentdistance
 
-        #elif currentdistance <= self.lastDistance:
-          #  reward = 0.5 + (self.startGoalDistance / currentTime)
+        if currentdistance < self.closestDistance:
+            reward = self.discountFactorMue*(self.closestDistance-currentdistance)
+            self.closestDistance = currentdistance
 
-#         explored = (eleviationImage > 100).sum()
-#         if (explored > self.explored_last):
-#             self.explored_last = explored
-#             reward += 8
-#             if explored< 1000:
-#                 reward += explored /200
-#             else:
-#                 reward += 1
+        if (self.ic.acceleration_to_high):
+            print(str(self.number) + "acceleration_to_high")
+            print("accel z:" + str(self.ic.accelZ))
 
-        #if explored< 1000:
-        #    reward += explored /1000
-        #else:
-        #    reward += 1
-        reward = -0.2
-
-        maxAngularAccel = 9
-        if (angularAccelX >= maxAngularAccel or angularAccelY >= maxAngularAccel):
-            reward += -1
-
-        tip_over_angle = math.pi/4 + math.pi/8
-        if roll>=tip_over_angle or roll<=-tip_over_angle or pitch>=tip_over_angle or pitch<=-tip_over_angle:
-            reward = -20
+            reward = -1
             EndEpisode = True
+            self.ic.acceleration_to_high = False
 
-       # if(self.number == 1):
-       #     print("var_delta_vel" + str(var_delta_vel))
 
+        if(self.ic.robot_flip_over):
+            reward = -1
+            EndEpisode = True
+            self.ic.robot_flip_over = False
+
+
+        #if (mean_delta_vel <= 1e-2 and self.number!=1):
         if (mean_delta_vel <= 1e-2):
-            reward = -2
+            reward = -1
             EndEpisode = True
 
         if currentdistance <= self.deltaDist:
-            reward = 100
-            text_file = open("a3c_results.txt", "a")
-            text_file.write(str(self.number) + 'reached Goal\n')
-            text_file.close()
+            reward = 0.5 +  (self.startGoalDistance*10 / self.stepCounter)
             print("reached Goal")
             EndEpisode = True
-            self.number_reached_goal
 
         if  self.stepCounter>=self.EpisodeLength:
             EndEpisode = True
 
-        #print("current reward: " + str(reward))
-        reward = reward*0.01
-        #reward = reward*0.001
-        #if(self.number == 1):
-            #print("reward for step: " + str(reward))
         self.lastDistance = currentdistance
         self.lastTime = currentTime
 
         self.episodeFinished = EndEpisode
         reward = np.float32(reward)
-       # print("reward" + str(reward))
-        if(EndEpisode):
-            self.explored_last = 0
+
+
+
         return reward, EndEpisode
 
     def stopSteps(self):
@@ -314,9 +291,6 @@ class robotEnv():
     def returnRollPitchYaw(self, orientation):
         orientation_list = [orientation.x, orientation.y, orientation.z, orientation.w]
         return  euler_from_quaternion(orientation_list)
-
-    def return_times_reached_goal(self, start, goal):
-        return self.number_of_epsiodes, self.number_reached_goal
 
     def clcDistance(self, start, goal):
         distance = math.sqrt(pow((goal.x),2)+pow((goal.y),2))

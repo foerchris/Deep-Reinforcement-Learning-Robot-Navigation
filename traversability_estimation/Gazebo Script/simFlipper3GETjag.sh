@@ -63,7 +63,7 @@ EPISODCOUNT=0
 rosparam set "/Gazebo/simulator_ready" false
 
 i=1
-while [ $i -lt 6 ]
+while [ $i -lt 4 ]
 do
 	rosparam set "/GETjag$i/End_of_episode" false
 	rosparam set "/GETjag$i/End_of_enviroment" false
@@ -80,7 +80,7 @@ do
 	CANEXIT=0
 	#reset watchdog
 	echo -e "[$(date +"%T")]: ${GREEN}Starting gazebo with world: ${NC}$world"
-	roslaunch get_gazebo_worlds getjagFlipper5.launch world:=$world gui:=$simulator > output_gazebo.txt 2>&1 &
+	roslaunch get_gazebo_worlds getjagFlipper3.launch world:=$world gui:=$simulator > output_gazebo.txt 2>&1 &
 	PIDs+=($!)
 	sleep 10
 	STARTTIME=$(date +%s.%N)
@@ -97,7 +97,7 @@ do
 	while [ $CANEXIT -lt 1 ]; do
 		#ros not started
 		i=1
-		while [ $i -lt 6 ]
+		while [ $i -lt 4 ]
 		do
 			if (grep -q "Unable to set value" output_gazebo.txt); then
 

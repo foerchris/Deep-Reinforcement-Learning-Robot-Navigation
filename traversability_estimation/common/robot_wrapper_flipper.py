@@ -15,11 +15,13 @@ from std_msgs.msg import Float64
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Bool
 from sensor_msgs.msg import Imu
+from tf.transformations import euler_from_quaternion
 
 import matplotlib.pyplot as plt
-
+import math
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
+from __builtin__ import True
 
 class image_converter():
     def __init__(self,number):
@@ -35,18 +37,21 @@ class image_converter():
         self.robotGroundMap = np.zeros((28, 28), dtype = "uint16")
         self.currentPose = Odometry()
         self.imu_data = Imu()
+        self.accelZ = 0
 
+        self.acceleration_to_high = False
+        self.tip_over_angle = math.pi/4 + math.pi/6
+        self.robot_flip_over = False
+        self.biggestangularAccelz = 0
         self.goalPose = Odometry()
         self.flipperPoseFront = JointState()
         self.flipperPoseRear = JointState()
         self.countPub = 0
         self.robotAction = 7
         self.main()
-
     def stop(self):
         self.flipperVelFront = 0
         self.flipperVelRear = 0
-
 
     def setAction(self, action):
         bound = 1.22
@@ -56,14 +61,14 @@ class image_converter():
 
 
         if(frontPose >= bound and action[0]>0):
-            action[0] = 0
+            action[0] = -action[0]
         elif(frontPose <= -bound and action[0]<0):
-            action[0] = 0
+            action[0] = -action[0]
 
         if (rearPose >= bound and action[1]>0):
-            action[1] = 0
+            action[1] = -action[1]
         elif (rearPose <= -bound and action[1]<0):
-            action[1] = 0
+            action[1] = -action[1]
 
 
         self.flipperVelFront = action[0]
@@ -73,13 +78,19 @@ class image_converter():
     # also transmits the robot action as velocities
     def robotCallback(self,odom_data):
         self.currentPose = odom_data
+        #if(self.number==1):
+        #    self.startStopRobot.data = False
+        #    self.flipperVelFront = 0
+        #    self.flipperVelRear = 0
+
         self.startStopRobotPub.publish( self.startStopRobot)
         self.robotFlipperFrontPub.publish( self.flipperVelFront)
         self.robotFlipperRearPub.publish( self.flipperVelRear)
-       # self.countPub +=1
-       # if self.countPub % 1000 == 0:
-         #   self.countPub = 0
-         #   print("worker_" + str(self.number) + "self.velocities" + str(self.velocities))
+
+        roll, pitch, yaw = self.returnRollPitchYaw(self.currentPose.pose.pose.orientation)
+
+        if roll>=self.tip_over_angle or roll<=-self.tip_over_angle or pitch>=self.tip_over_angle or pitch<=-self.tip_over_angle:
+            self.robot_flip_over = True
 
     def flipperFrontPose(self, flipper_pose):
         self.flipperPoseFront = flipper_pose
@@ -95,6 +106,16 @@ class image_converter():
     # callback to get the goal robot pose as position (x,y,z) and orientation as quaternion (x,y,z,w)
     def imuCallback(self, imu_data):
         self.imu_data = imu_data
+        angularAccelz = self.imu_data.linear_acceleration.z
+        maxAngularAccel = 10
+        if(self.number ==1):
+            if(angularAccelz> self.biggestangularAccelz):
+                self.biggestangularAccelz = angularAccelz
+            if (angularAccelz >= maxAngularAccel):
+                #self.acceleration_to_high = True
+
+                self.accelZ = angularAccelz
+
 
     # return the eleviation map image with [200,200] Pixel and saves it to a global variable
     def robotGroundMapCallback(self, map_data):
@@ -113,6 +134,10 @@ class image_converter():
 
     def returnData(self):
         return self.robotGroundMap, self.currentPose, self.goalPose, self.flipperPoseFront, self.flipperPoseRear
+
+    def returnRollPitchYaw(self, orientation):
+        orientation_list = [orientation.x, orientation.y, orientation.z, orientation.w]
+        return  euler_from_quaternion(orientation_list)
 
     def main( self):
         '''Initializes and cleanup ros node'''
