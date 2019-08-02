@@ -19,7 +19,8 @@ import os
 dirname = os.path.dirname(__file__)
 import sys
 sys.path.append(os.path.join(dirname, 'common'))
-from flipper_model import FeatureNetwork, ActorCritic
+from flipper_model2 import FeatureNetwork, ActorCritic
+from inspect import currentframe, getframeinfo
 
 class Agent():
     def __init__(self,state_size_map, state_size_orientation, num_outputs, hidden_size, stack_size, load_model, MODELPATH, learning_rate, mini_batch_size, worker_number, lr_decay_epoch, init_lr, eta = 0.01):
@@ -36,6 +37,7 @@ class Agent():
         self.feature_net = FeatureNetwork(state_size_map*stack_size, state_size_orientation * stack_size , hidden_size, stack_size).to(self.device)
 
         self.ac_model = ActorCritic(num_outputs, hidden_size).to(self.device)
+        self.frameinfo = getframeinfo(currentframe())
 
         if(load_model):
             self.feature_net.load_state_dict(torch.load(MODELPATH + '/save_ppo_feature_net.dat'))
@@ -90,8 +92,9 @@ class Agent():
         # Normalize the advantages
         advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
-        ce = nn.CrossEntropyLoss()
-        forward_mse = nn.MSELoss()
+
+
+
         for _ in range(ppo_epochs):
             for  map_state, orientation_state, hidden_state_h, hidden_state_c, next_map_state, next_orientation_state, next_hidden_state_h, next_hidden_state_c, action, old_log_probs, return_, advantage, old_value in self.ppo_iter(map_states, orientation_states, hidden_states_h, hidden_states_c, actions, log_probs,
                                                                             returns, advantages, values):
@@ -143,6 +146,8 @@ class Agent():
                 sum_loss_critic += critic_loss
                 sum_loss_total += loss
                 sum_entropy += entropy
+
+
         summary = tf.Summary()
         summary.value.add(tag='Perf/sum_returns', simple_value=float(sum_returns))
         summary.value.add(tag='Perf/sum_advantage', simple_value=float(sum_advantage))
@@ -151,3 +156,5 @@ class Agent():
         summary.value.add(tag='Perf/sum_loss_total', simple_value=float(sum_loss_total))
         summary.value.add(tag='Perf/sum_entropy', simple_value=float(sum_entropy))
         self.summary_writer.add_summary(summary, frame_idx)
+
+
