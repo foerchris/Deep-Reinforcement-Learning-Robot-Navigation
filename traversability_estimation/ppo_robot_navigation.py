@@ -150,10 +150,10 @@ lr_decay_epoch   = 300.0
 init_lr          = lr
 epoch            = 0.0
 
-max_num_steps    = 300
-num_steps        = 1000
-mini_batch_size  = 100
-ppo_epochs       = 4
+max_num_steps    = 600
+num_steps        = 2000
+mini_batch_size  = 200
+ppo_epochs       = 5
 GAMMA            = 0.99
 GAE_LAMBDA       = 0.95
 PPO_EPSILON      = 0.2
@@ -167,6 +167,7 @@ threshold_reward = 5
 f= open("train_getjag/ppo/Tensorboard/Hyperparameters.txt","w+")
 
 f.write("Navigation Control")
+f.write("\n Workers: " + str(num_envs))
 f.write("\n hidden_size: " + str(hidden_size))
 f.write("\n lr: " + str(lr))
 f.write("\n lr_decay_epoch: " + str(lr_decay_epoch))
@@ -184,6 +185,7 @@ f.write("\n ENTROPY_BETA: " + str(ENTROPY_BETA))
 f.write("\n eta: " + str(eta))
 f.write("\n LSTM: Yes")
 f.write("\n Architecture: 1")
+
 f.close()
 
 agent = Agent(state_size_map, state_size_depth , state_size_goal, num_outputs, hidden_size, stack_size, load_model, MODELPATH, lr, mini_batch_size, num_envs, lr_decay_epoch, init_lr, eta)
@@ -216,6 +218,7 @@ agent.feature_net.hidden = agent.feature_net.init_hidden(num_envs)
 
 done_cache = []
 step_count = []
+all_rewards = []
 total_reward = []
 total_total_reward = []
 total_step_count = []
@@ -229,6 +232,8 @@ for i in range(0, num_envs):
     done_cache.append(False)
     step_count.append(0)
     total_reward.append(0)
+    bla = []
+    all_rewards.append(bla)
 
 while frame_idx < max_frames and not early_stop:
 
@@ -267,7 +272,7 @@ while frame_idx < max_frames and not early_stop:
             #
 
             action = dist.sample()
-
+            #print("action.cpu(): " + str(action.cpu()))
             # this is a x,1 tensor is kontains alle the possible actions
             # the cpu command move it from a gpu tensor to a cpu tensor
             next_map_state, next_depth_state, next_goal_state, reward, done, _ = envs.step(action.cpu().numpy())
@@ -311,12 +316,20 @@ while frame_idx < max_frames and not early_stop:
             total_reward += reward
 
             for i in range(0, num_envs):
+                #all_rewards[i].append(reward[i])
+
                 step_count[i] += 1
                 if (done[i] == True):
                     total_step_count.append(step_count[i])
                     step_count[i] = 0
                     total_total_reward.append(total_reward[i])
+                    #print("all_rewards" + str(i + 1) + ": " + str(all_rewards[i]))
+                    #print("mean_all_rewards" + str(i + 1) + ": " + str(np.sum(all_rewards[i])))
+                    #print("total_step_count" + str(i + 1) + ": " + str(total_step_count))
+                    #print("total_total_reward" + str(i + 1) + ": " + str(total_total_reward))
                     total_reward[i] = 0
+                    #all_rewards[i] = []
+
 
             #sample_i_rall += intrinsic_reward[sample_env_idx]
             log_prob = dist.log_prob(action)

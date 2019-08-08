@@ -2,13 +2,14 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="006d84f8-4341-4757-8cb1-e35d54703074" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/sim5GETjag.sh" beforeDir="false" afterPath="$PROJECT_DIR$/Gazebo Script/sim5GETjag.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/agents_icm.py" beforeDir="false" afterPath="$PROJECT_DIR$/common/agents_icm.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/model_icm.py" beforeDir="false" afterPath="$PROJECT_DIR$/common/model_icm.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Gazebo Script/sim3GETjag.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Gazebo Script/simFlipper4GETjag.sh" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/common/robot_env.py" beforeDir="false" afterPath="$PROJECT_DIR$/common/robot_env.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/common/robot_wrapper.py" beforeDir="false" afterPath="$PROJECT_DIR$/common/robot_wrapper.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/common/robot_wrapper_flipper.py" beforeDir="false" afterPath="$PROJECT_DIR$/common/robot_wrapper_flipper.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ppo_flipper_control.py" beforeDir="false" afterPath="$PROJECT_DIR$/ppo_flipper_control.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ppo_robot_navigation.py" beforeDir="false" afterPath="$PROJECT_DIR$/ppo_robot_navigation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ppo_robot_navigation_icm.py" beforeDir="false" afterPath="$PROJECT_DIR$/ppo_robot_navigation_icm.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test7.py" beforeDir="false" afterPath="$PROJECT_DIR$/test7.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -200,11 +201,10 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/common/robot_env.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="703">
-              <caret line="289" column="17" selection-start-line="289" selection-start-column="17" selection-end-line="289" selection-end-column="17" />
+            <state relative-caret-position="847">
+              <caret line="485" column="38" selection-start-line="485" selection-start-column="38" selection-end-line="485" selection-end-column="38" />
               <folding>
-                <marker date="1565250546297" expanded="true" signature="13749:13758" ph="..." />
-                <marker date="1565250546297" expanded="true" signature="13749:14088" ph="..." />
+                <element signature="e#45#63#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -324,8 +324,8 @@
         <option value="$PROJECT_DIR$/common/model_icm.py" />
         <option value="$PROJECT_DIR$/common/agents_icm.py" />
         <option value="$PROJECT_DIR$/ppo_robot_navigation.py" />
-        <option value="$PROJECT_DIR$/common/robot_env.py" />
         <option value="$PROJECT_DIR$/ppo_robot_navigation_icm.py" />
+        <option value="$PROJECT_DIR$/common/robot_env.py" />
       </list>
     </option>
   </component>
@@ -925,11 +925,10 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/common/robot_env.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="703">
-          <caret line="289" column="17" selection-start-line="289" selection-start-column="17" selection-end-line="289" selection-end-column="17" />
+        <state relative-caret-position="847">
+          <caret line="485" column="38" selection-start-line="485" selection-start-column="38" selection-end-line="485" selection-end-column="38" />
           <folding>
-            <marker date="1565250546297" expanded="true" signature="13749:13758" ph="..." />
-            <marker date="1565250546297" expanded="true" signature="13749:14088" ph="..." />
+            <element signature="e#45#63#0" expanded="true" />
           </folding>
         </state>
       </provider>
