@@ -39,7 +39,7 @@ from inspect import currentframe, getframeinfo
 
 MODELPATH = os.path.join(dirname, 'train_getjag/ppo_flipper/Model')
 
-load_model = False
+load_model = True
 last_number_of_frames = 0
 frame_idx  = 0 + last_number_of_frames
 num_envs_possible = 16;
@@ -148,9 +148,9 @@ init_lr          = lr
 epoch            = 0.0
 
 max_num_steps    = 250
-num_steps        = 10000
-mini_batch_size  = 1000
-ppo_epochs       = 6
+num_steps        = 2000
+mini_batch_size  = 200
+ppo_epochs       = 5
 GAMMA            = 0.99
 GAE_LAMBDA       = 0.95
 PPO_EPSILON      = 0.2
@@ -158,7 +158,7 @@ CRICIC_DISCOUNT  = 0.5
 ENTROPY_BETA     = 0.01
 eta              = 0.01
 threshold_reward = 5
-threshold_reached_goal = 0.8
+threshold_reached_goal = 0.95
 #
 
 f= open("train_getjag/ppo_flipper/Tensorboard/Hyperparameters.txt","w+")
@@ -451,10 +451,10 @@ entropy = 0
 
 agent.feature_net.eval()
 agent.ac_model.eval()
-eval_steps = 6000
+eval_steps = 6000 + frame_idx
 steps_idx = 0
 
-while frame_idx < eval_steps :
+while frame_idx < eval_steps:
     with torch.no_grad():
         for _ in range(num_steps):
 
@@ -542,7 +542,6 @@ summary.value.add(tag='Mittelwert/Belohnungen', simple_value=float(mean_test_rew
 summary.value.add(tag='Mittelwert/Epsioden Länge', simple_value=float(mean_test_lenghts))
 summary.value.add(tag='Mittelwert/Std-Abweichung', simple_value=float(mean_total_std))
 summary.value.add(tag='Mittelwert/Ziel erreich', simple_value=float(mean_reach_goal))
-summary.value.add(tag='Mittelwert/Ziel erreicht_Test', simple_value=float(number_reached_goal/number_of_episodes))
 summary.value.add(tag='Mittelwert/anzahl Episoden', simple_value=float(number_of_episodes))
 number_of_episodes = 0
 summary.value.add(tag='Mittelwert/anzahl Ziel erreicht', simple_value=float(number_reached_goal))

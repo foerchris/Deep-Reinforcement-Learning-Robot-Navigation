@@ -113,7 +113,6 @@ class image_converter():
                 self.biggestangularAccelz = angularAccelz
             if (angularAccelz >= maxAngularAccel):
                 #self.acceleration_to_high = True
-
                 self.accelZ = angularAccelz
 
 

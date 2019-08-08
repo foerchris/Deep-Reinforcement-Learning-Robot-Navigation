@@ -26,6 +26,8 @@ import matplotlib.pyplot as plt
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from mock.mock import self
+from __builtin__ import False
 
 # This class proveds the interaction between the robot and the DQN Agent
 class robotEnv():
@@ -45,7 +47,7 @@ class robotEnv():
         self.episodeFinished = False
         # Variables to calculate the reward
         self.deltaDist = 0.20
-        self.discountFactorMue = 0.3
+        self.discountFactorMue = 0.1
         self.closestDistance = 0
         self.startGoalDistance = 0
         self.lastDistance = 0
@@ -86,6 +88,8 @@ class robotEnv():
         self.msg.attach(part2)
 
         self.countResetZeroVel = 0
+
+        self.cell_states = cell_checker(10.0)
 
     def set_episode_length(self,EpisodeLength):
         self.EpisodeLength = EpisodeLength
@@ -230,13 +234,21 @@ class robotEnv():
                 s.quit()
                 print("worker_" + str(self.number) + " stucked at cheak for valid state");
 
+        sleep(0.2)
+        #print("self.closestDistance " + str(self.number) + ": " + str(self.closestDistance ))
+
         self.startGoalDistance = self.clcDistance(self.goalPose.pose.pose.position)
         self.closestDistance = self.startGoalDistance
+        #print("self.closestDistance " + str(self.number) + ": " + str(self.closestDistance ))
         self.startTime = time.time()
         self.lastTime = self.startTime
 
-        sleep(0.2)
         self.number_of_epsiodes += 1
+
+        self.cell_states.reset_possible_cells()
+
+
+
         return self.get_state()
 
 
@@ -244,9 +256,24 @@ class robotEnv():
         depthImage, eleviationImage, self.currentPose, self.goalPose= self.ic.returnData()
         roll, pitch, yaw = self.returnRollPitchYaw(self.currentPose.pose.pose.orientation)
 
+        currentX = self.ic.currentRobotPose.pose.pose.position.x
+        currentY = self.ic.currentRobotPose.pose.pose.position.y
+
+        #if(self.number == 1):
+         #   print("currentX" + str(currentX))
+          #  print("currentY" + str(currentY))
+
         currenVel = self.currentPose.twist.twist.linear.x
 
         currentdistance = self.clcDistance(self.goalPose.pose.pose.position)
+        exploredNewArea= False
+        if(self.stepCounter==1):
+            self.cell_states.get_possible_cells(self.ic.currentRobotPose.pose.pose.position)
+            self.closestDistance = currentdistance
+        else:
+            exploredNewArea = self.cell_states.get_possible_cells(self.ic.currentRobotPose.pose.pose.position)
+
+
         currentTime = time.time()
         currentTime = currentTime - self.startTime
         deltaTime = currentTime - self.lastTime
@@ -274,11 +301,18 @@ class robotEnv():
            # print("currentdistance" + str(currentdistance))
 
         if currentdistance < self.closestDistance:
-            reward = self.discountFactorMue*(self.closestDistance-currentdistance)
-            self.closestDistance = currentdistance
-            #if (self.number == 1):
-             #   print("currentdistance < self.closestDistance reward:" + str(reward))
 
+            reward = self.discountFactorMue*(self.closestDistance-currentdistance)
+            if (reward>=0.1):
+                print("self.stepCounter" + str(self.number) + ": " + str(self.stepCounter))
+                print("self.closestDistance" + str(self.number) + ": " + str(self.closestDistance))
+                print("currentdistance" + str(self.number) + ": " + str(currentdistance))
+                print("currentdistance < self.closestDistance reward_" + str(self.number) + ": " + str(reward))
+                #reward = 0;
+            self.closestDistance = currentdistance
+
+        if exploredNewArea:
+            reward += 0.03
         #if(self.number ==1):
           #  print("reward" + str(reward))
         #elif currentdistance <= self.lastDistance:
@@ -402,6 +436,35 @@ class robotEnv():
         print('You pressed Ctrl+C!')
         self.ic.shoutdown_node();
         sys.exit(0)
+
+
+class cell_checker():
+    def __init__(self, size):
+        self.valueX = []
+        self.valueY = []
+        self.env_size = size
+        self.range = self.env_size/8.0
+
+
+    def get_possible_cells(self,pose):
+        xInRange = False
+        for i in range(0, len(self.valueX),1):
+            if(abs(pose.x - self.valueX[i] ) < self.range and abs(pose.y - self.valueY[i] ) < self.range):
+
+                del self.valueX[i]
+                del self.valueY[i]
+
+                xInRange = True
+                break
+        return xInRange
+    def reset_possible_cells(self):
+        self.valueX = []
+        self.valueY = []
+
+        for x in np.arange ( self.env_size/8.0, self.env_size,  self.env_size/4.0):
+            for y in np.arange ( self.env_size/8.0, self.env_size,  self.env_size/4.0):
+                self.valueX.append(x - self.env_size/2.0)
+                self.valueY.append(y - self.env_size/2.0)
 
 class Memory():
     def __init__(self, size):
