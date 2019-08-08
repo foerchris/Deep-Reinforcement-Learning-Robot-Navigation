@@ -101,24 +101,24 @@ do
 		do
 			if (grep -q "Unable to set value" output_gazebo.txt); then
 			
-				rosparam set "/GETjag$i/Error_in_simulator" true
-				rosparam set "/GETjag$i/Ready_to_Start_DRL_Agent" false
+				#rosparam set "/GETjag$i/Error_in_simulator" true
+				#rosparam set "/GETjag$i/Ready_to_Start_DRL_Agent" false
 
 				echo -e "[$(date +"%T")] Error in simulator${NC} Unable to set value "
-				i=5
-				CANEXIT=3
-				PIDs+=($!)
+				#i=5
+				#CANEXIT=3
+				#PIDs+=($!)
 				sleep 0.5
 
 			elif (grep -q "Segmentation fault" output_gazebo.txt); then
 			
-				rosparam set "/GETjag$i/Error_in_simulator" true
-				rosparam set "/GETjag$i/Ready_to_Start_DRL_Agent" false
+				#rosparam set "/GETjag$i/Error_in_simulator" true
+				#rosparam set "/GETjag$i/Ready_to_Start_DRL_Agent" false
 
 				echo -e "[$(date +"%T")] Error in simulator${NC}: Segmentation fault"
-				i=5
-				CANEXIT=3
-				PIDs+=($!)
+				#i=5
+				#CANEXIT=3
+				#PIDs+=($!)
 				sleep 0.5
 
 			elif  ($(rosparam get /GETjag$i/End_of_enviroment)); then

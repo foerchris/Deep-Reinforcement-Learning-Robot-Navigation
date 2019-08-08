@@ -45,7 +45,7 @@ class robotEnv():
         self.episodeFinished = False
         # Variables to calculate the reward
         self.deltaDist = 0.20
-        self.discountFactorMue = 0.3
+        self.discountFactorMue = 0.1
         self.closestDistance = 0
         self.startGoalDistance = 0
         self.lastDistance = 0
@@ -247,6 +247,8 @@ class robotEnv():
         currenVel = self.currentPose.twist.twist.linear.x
 
         currentdistance = self.clcDistance(self.goalPose.pose.pose.position)
+        if(self.stepCounter==1):
+            self.closestDistance = currentdistance
         currentTime = time.time()
         currentTime = currentTime - self.startTime
         deltaTime = currentTime - self.lastTime
@@ -275,9 +277,19 @@ class robotEnv():
 
         if currentdistance < self.closestDistance:
             reward = self.discountFactorMue*(self.closestDistance-currentdistance)
+            if (reward >= 0.1):
+                print("currentTime" + str(self.number) + ": " + str(currentTime))
+                print("self.lastTime" + str(self.number) + ": " + str(self.lastTime))
+                print("delta t" + str(self.number) + ": " + str(currentTime-self.lastTime))
+                print("currenVel" + str(self.number) + ": " + str(currenVel))
+
+                print("currentdistance < self.closestDistance reward" + str(self.number) + ": " + str(reward))
+                print("currentdistance" + str(self.number) + ": " + str(currentdistance))
+                print("self.closestDistance" + str(self.number) + ": " + str(self.closestDistance))
+
+                #reward = 0
             self.closestDistance = currentdistance
-            #if (self.number == 1):
-             #   print("currentdistance < self.closestDistance reward:" + str(reward))
+
 
         #if(self.number ==1):
           #  print("reward" + str(reward))
@@ -307,13 +319,9 @@ class robotEnv():
        # if(self.number == 1):
        #     print("var_delta_vel" + str(var_delta_vel))
 
-       # if (var_delta_x <= 1e-2 and var_delta_y <= 1e-2):
-        if (mean_delta_vel <= 1e-2):
-           # if(self.number == 1):
-               # print("mean_delta_vel" + str(mean_delta_vel))
-               # print("self.delta_set_vel_lin_memory Array" + str(self.delta_set_vel_lin_memory.returnNumpyArray()))
-              #  print("self.delta_vel_memory Array" + str(self.delta_vel_memory.returnNumpyArray()))
 
+        # if (var_delta_x <= 1e-2 and var_delta_y <= 1e-2):
+        if (mean_delta_vel <= 1e-2):
             reward = -0.5
             EndEpisode = True
             self.countResetZeroVel +=1
@@ -337,7 +345,12 @@ class robotEnv():
             self.countResetZeroVel = 0
             rospy.set_param("/GETjag"+ str(self.number) + "/Error_in_simulator",True)
 
-
+        if np.isnan(mean_delta_vel):
+            EndEpisode = True
+            print("Gazebo\ Script/write text file")
+            file = open('Gazebo Script/output_gazebo.txt', 'w')
+            file.write('Unable to set value')
+            file.close()
 
         #print("current reward: " + str(reward))
         #reward = reward*0.01
