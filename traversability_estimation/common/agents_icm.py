@@ -15,7 +15,6 @@ import tensorflow as tf
 from tensorboardX import SummaryWriter
 
 import os
-from hgext.histedit import action
 dirname = os.path.dirname(__file__)
 import sys
 sys.path.append(os.path.join(dirname, 'common'))
@@ -33,7 +32,7 @@ class Agent():
         self.device   = torch.device("cuda" if use_cuda else "cpu")
         torch.cuda.empty_cache()
         self.summary_writer = tf.summary.FileWriter("train_getjag/ppo/Tensorboard")
-        self.feature_net = FeatureNetwork(state_size_map*stack_size, state_size_depth * 4, state_size_goal * 4 , hidden_size, stack_size).to(self.device)
+        self.feature_net = FeatureNetwork(state_size_map*stack_size, state_size_depth * stack_size, state_size_goal * stack_size, hidden_size, stack_size).to(self.device)
 
         self.ac_model = ActorCritic(num_outputs, hidden_size).to(self.device)
         self.icm_model = ICMModel(num_outputs, hidden_size).to(self.device)
@@ -185,8 +184,8 @@ class Agent():
 
         pred_next_state_feature, pred_action = self.icm_model(real_state_feature, real_next_state_feature, action)
 
-        print('action' + str(action))
-        print('pred_action' + str(pred_action))
+        #print('action' + str(action))
+        #print('pred_action' + str(pred_action))
 
 
         intrinsic_reward = self.eta * F.mse_loss(real_next_state_feature, pred_next_state_feature, reduction='none').mean(-1)

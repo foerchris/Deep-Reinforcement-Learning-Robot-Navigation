@@ -379,7 +379,6 @@ while frame_idx < max_frames and not early_stop:
                 summary.value.add(tag='Mittelwert/Epsioden Länge', simple_value=float(mean_test_lenghts))
                 summary.value.add(tag='Mittelwert/Std-Abweichung', simple_value=float(mean_total_std))
                 summary.value.add(tag='Mittelwert/Ziel erreich', simple_value=float(mean_reach_goal))
-                summary.value.add(tag='Mittelwert/Ziel erreicht_Test', simple_value=float(number_reached_goal/number_of_episodes))
                 summary.value.add(tag='Mittelwert/anzahl Episoden', simple_value=float(number_of_episodes))
                 number_of_episodes = 0
                 summary.value.add(tag='Mittelwert/anzahl Ziel erreicht', simple_value=float(number_reached_goal))
