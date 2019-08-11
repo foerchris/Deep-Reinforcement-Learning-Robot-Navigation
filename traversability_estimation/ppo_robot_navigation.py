@@ -20,6 +20,7 @@ from collections import deque
 from time import  sleep
 import gc
 import os
+from __builtin__ import True
 dirname = os.path.dirname(__file__)
 
 use_cuda = torch.cuda.is_available()
@@ -153,12 +154,12 @@ epoch            = 0.0
 max_num_steps    = 600
 num_steps        = 2000
 mini_batch_size  = 200
-ppo_epochs       = 5
+ppo_epochs       = 4
 GAMMA            = 0.99
 GAE_LAMBDA       = 0.95
 PPO_EPSILON      = 0.2
 CRICIC_DISCOUNT  = 0.5
-ENTROPY_BETA     = 0.01
+ENTROPY_BETA     = 0.001
 eta              = 0.01
 threshold_reward = 5
 #
@@ -469,15 +470,24 @@ number_reached_goal = 0
 reach_goal = []
 entropy = 0
 
+for i in range(0, num_envs):
+    done_cache.append(False)
+    step_count.append(0)
+    total_reward.append(0)
+    bla = []
+    all_rewards.append(bla)
+
 agent.feature_net.eval()
 agent.ac_model.eval()
+frame_idx = 0
 eval_steps = 6000
 steps_idx = 0
 
 while frame_idx < eval_steps :
     with torch.no_grad():
         for _ in range(num_steps):
-
+            print("frame_idx: " + str(frame_idx))
+            frame_idx += 1
 
             map_state = torch.FloatTensor(map_state).to(device)
             depth_state = torch.FloatTensor(depth_state).to(device)
@@ -493,9 +503,9 @@ while frame_idx < eval_steps :
 
 
             action = dist.mean.detach()
-            print("action" + str(action))
-            action = dist.mean.detach()
-            print("action" + str(action))
+            #print("action" + str(action))
+            #action = dist.mean.detach()
+            #print("action" + str(action))
 
             # this is a x,1 tensor is kontains alle the possible actions
             # the cpu command move it from a gpu tensor to a cpu tensor
@@ -570,7 +580,6 @@ summary.value.add(tag='Mittelwert/Belohnungen', simple_value=float(mean_test_rew
 summary.value.add(tag='Mittelwert/Epsioden Länge', simple_value=float(mean_test_lenghts))
 summary.value.add(tag='Mittelwert/Std-Abweichung', simple_value=float(mean_total_std))
 summary.value.add(tag='Mittelwert/Ziel erreich', simple_value=float(mean_reach_goal))
-summary.value.add(tag='Mittelwert/Ziel erreicht_Test', simple_value=float(number_reached_goal/number_of_episodes))
 summary.value.add(tag='Mittelwert/anzahl Episoden', simple_value=float(number_of_episodes))
 number_of_episodes = 0
 summary.value.add(tag='Mittelwert/anzahl Ziel erreicht', simple_value=float(number_reached_goal))
