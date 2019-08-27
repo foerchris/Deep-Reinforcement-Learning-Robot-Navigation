@@ -87,22 +87,52 @@ class FeatureNetwork(nn.Module):
             if m.bias is not None:
                 torch.nn.init.zeros_(m.bias)
         elif isinstance(m, nn.Conv2d):
-            torch.nn.init.xavier_uniform_(m.weight)
-            #torch.nn.init.orthogonal_(m.weight.data)
+            #torch.nn.init.xavier_uniform_(m.weight)
+            torch.nn.init.orthogonal_(m.weight.data)
             if m.bias is not None:
                 torch.nn.init.zeros_(m.bias)
         elif isinstance(m, nn.LSTM):
-            for param in m.parameters():
-                if len(param.shape) >= 2:
-                    torch.nn.init.orthogonal_(param.data)
-                else:
-                    torch.nn.init.normal_(param.data)
+            #for name, p in self.named_parameters():
+             #   if 'weight' in name:
+             #       init.orthogonal_(p)
+              #  elif 'bias' in name:
+               #     init.constant_(p, 0)
+
+
+            for name, p in self.named_parameters():
+                    if 'weight' in name:
+                        init.orthogonal_(p)
+                    elif 'bias' in name:
+                        init.constant_(p, 0)
         elif isinstance(m, nn.LSTMCell):
-            for param in m.parameters():
-                if len(param.shape) >= 2:
-                    torch.nn.init.orthogonal_(param.data)
-                else:
-                    torch.nn.init.normal_(param.data)
+
+            #for name, p in self.named_parameters():
+             #   if 'weight' in name:
+              #      init.orthogonal_(p)
+               # elif 'bias' in name:
+                #    init.constant_(p, 0)
+
+            for name, p in self.named_parameters():
+                    if 'weight' in name:
+                        init.orthogonal_(p)
+                    elif 'bias' in name:
+                        init.constant_(p, 0)
+
+           # for param in m.parameters():
+               # if len(param.shape) >= 2:
+                    #torch.nn.init.orthogonal_(param.data)
+               # for name, p in self.named_parameters():
+                 #   if 'weight' in name:
+                  #      init.orthogonal_(p)
+                  #  elif 'bias' in name:
+                   #     init.constant_(p, 0)
+              #  else:
+                    #torch.nn.init.normal_(param.data)
+                 #   for name, p in self.named_parameters():
+                 #       if 'weight' in name:
+                #            init.normal_(p)
+                   #     elif 'bias' in name:
+                  #          init.constant_(p, 0)
 
     def init_hidden(self, batch_size):
         # Before we've done anything, we dont have any hidden state.
@@ -117,6 +147,11 @@ class FeatureNetwork(nn.Module):
         self.hidden = (hidden_h, hidden_c)
 
        # plt.imshow(map_state[0][0].cpu().numpy() ,cmap="gray")
+        #plt.show()
+        #map_state= map_state.view(-1,map_state.shape[2], map_state.shape[3], map_state.shape[4])
+        #plt.imshow(map_state[0][0].cpu().numpy(),cmap="gray")
+        #plt.show()
+        #plt.imshow(map_state[0][1].cpu().numpy(),cmap="gray")
         #plt.show()
         map = self.cnn_map(map_state)
         # print("goal_state"+str(goal_state))
@@ -170,13 +205,17 @@ class FeatureNetwork(nn.Module):
 
         lstm_out, self.hidden = self.lstm(map_goal_depth, self.hidden)
 
+       # print("lstm_out.shape" + str(lstm_out.shape))
         lstm_out = lstm_out.view(-1, lstm_out.shape[2])
+       # print("lstm_out.shape" + str(lstm_out.shape))
 
         hidden_h = self.hidden[0]
         hidden_c = self.hidden[1]
         map_goal_depth = map_goal_depth.view(-1, map_goal_depth.shape[2])
 
-        return lstm_out, hidden_h.detach(), hidden_c.detach()
+        #return map_goal_depth, hidden_h.detach(), hidden_c.detach()
+        return lstm_out, hidden_h, hidden_c
+
 
 class ActorCritic(nn.Module):
     def __init__(self, num_outputs,hidden_size, std=0.0):
@@ -188,14 +227,21 @@ class ActorCritic(nn.Module):
 
         self.critic = nn.Sequential(
             nn.Linear(hidden_size, hidden_size),
-            nn.ReLU(),
+            nn.Tanh(),
+            #nn.ReLU(),
+            #nn.Linear(hidden_size, hidden_size),
+            #nn.Tanh(),
             nn.Linear(hidden_size, 1)
         )
 
         self.actor = nn.Sequential(
             nn.Linear(hidden_size, hidden_size),
-            nn.ReLU(),
+            nn.Tanh(),
+            #nn.ReLU(),
+           # nn.Linear(hidden_size, hidden_size),
+           # nn.Tanh(),
             nn.Linear(hidden_size, num_outputs),
+            nn.Tanh()
         )
         self.log_std = nn.Parameter(torch.ones(1, num_outputs) * std)
 
@@ -203,11 +249,13 @@ class ActorCritic(nn.Module):
         if isinstance(m, nn.Linear):
             #nn.init.normal_(m.weight, mean=0., std=0.05)
             torch.nn.init.orthogonal_(m.weight.data)
+            #torch.nn.init.orthogonal_(m.weight, np.sqrt(2))
             #nn.init.constant_(m.bias, 0.0)
             if m.bias is not None:
                 torch.nn.init.zeros_(m.bias)
         elif isinstance(m, nn.Conv2d):
             torch.nn.init.xavier_uniform_(m.weight)
+            #torch.nn.init.orthogonal_(m.weight, np.sqrt(2))
             #torch.nn.init.orthogonal_(m.weight.data)
             if m.bias is not None:
                 torch.nn.init.zeros_(m.bias)

@@ -16,7 +16,9 @@ from nav_msgs.msg import Odometry
 
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
-
+import math
+import matplotlib.pyplot as plt
+from scipy.constants.constants import alpha
 class image_converter():
     def __init__(self,number):
         self.number = number
@@ -44,6 +46,9 @@ class image_converter():
         self.countPub = 0
         self.robotAction = 7
         self.main()
+        self.deltaDist = 0.4
+        self.reach_the_goal = False
+
 
     def stop(self):
         self.velocities.linear.x = 0
@@ -51,12 +56,14 @@ class image_converter():
 
     def setAction(self, action):
 
+        action[0] += 1
+        action[0] = action[0] / 2
         if(action[0] >= 1.0):
             action[0] = 1.0
-        #elif(action[0] <= -1.0):
-        #    action[0] = -1.0
-        elif(action[0] <= 0.05):
-            action[0] = 0.05
+        elif(action[0] <= 0.01):
+            action[0] = 0.01
+       # elif(action[0] <= 0.05):
+        #    action[0] = 0.05
 
         if (action[1] >= 1.0):
             action[1] = 1.0
@@ -88,6 +95,14 @@ class image_converter():
     def goalCallback(self,odom_data):
         self.goalPose = odom_data
 
+        currentdistance = self.clcDistance(self.goalPose.pose.pose.position)
+
+        if currentdistance <= self.deltaDist:
+            self.reach_the_goal = True
+
+    def clcDistance(self, goal):
+        distance = math.sqrt(pow((goal.x), 2) + pow((goal.y), 2))
+        return distance
     # return the eleviation map image with [x,x] Pixel and saves it to a global variable
     def depthImageCallback(self, depth_data):
         #print("depthImageCallback");
@@ -106,8 +121,30 @@ class image_converter():
             cv_image = self.bridge2.imgmsg_to_cv2(map_data)
         except CvBridgeError as e:
             print(e)
+        #print(cv_image.shape)
+        image = cv_image[:,:,0]
+        alpha = cv_image[:,:,3]
+        map = np.stack((cv2.resize(image, (200, 200)),cv2.resize(alpha, (200, 200))))
+        #print(map.shape)
 
-        self.eleviationImage = cv2.resize(cv_image, (200, 200))
+        if(self.number== 10):
+            red = cv_image[:,:,2]
+            green = cv_image[:,:,1]
+            image = cv_image[:,:,0]
+            alpha = cv_image[:,:,3]
+
+            plt.imshow(cv_image,cmap="gray")
+            plt.show()
+            plt.imshow(cv_image[:,:,0],cmap="gray")
+            plt.show()
+            plt.imshow(cv_image[:,:,1],cmap="gray")
+            plt.show()
+            plt.imshow(cv_image[:,:,2],cmap="gray")
+            plt.show()
+            plt.imshow(cv_image[:,:,3],cmap="gray")
+            plt.show()
+
+        self.eleviationImage = map
 
 
 
@@ -127,7 +164,7 @@ class image_converter():
         self.depthImageSub = rospy.Subscriber("/GETjag" + str(self.number) + "/xtion/depth/image_raw", Image,
                                               self.depthImageCallback)
         # self.elevImageSub = rospy.Subscriber("/GETjag" + str(self.number) + "/elevation_map_image", Image, self.elevImageCallback)
-        self.elevImageSub = rospy.Subscriber("/GETjag" + str(self.number) + "/elevation_map_image", Image,
+        self.elevImageSub = rospy.Subscriber("/GETjag" + str(self.number) + "/elevation_robot_ground_map", Image,
                                              self.elevImageCallback, queue_size=1)
 
         #rospy.spin()

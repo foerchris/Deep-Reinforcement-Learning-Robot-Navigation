@@ -107,13 +107,15 @@ class image_converter():
     def imuCallback(self, imu_data):
         self.imu_data = imu_data
         angularAccelz = self.imu_data.linear_acceleration.z
-        maxAngularAccel = 10
-        if(self.number ==1):
-            if(angularAccelz> self.biggestangularAccelz):
-                self.biggestangularAccelz = angularAccelz
-            if (angularAccelz >= maxAngularAccel):
-                #self.acceleration_to_high = True
-                self.accelZ = angularAccelz
+        maxAngularAccel = 100
+        #if(self.number ==1):
+
+        if(angularAccelz> self.biggestangularAccelz):
+            print("angularAccelz: " + str(angularAccelz))
+            self.biggestangularAccelz = angularAccelz
+        if (angularAccelz >= maxAngularAccel):
+            self.acceleration_to_high = True
+            self.accelZ = angularAccelz
 
 
     # return the eleviation map image with [200,200] Pixel and saves it to a global variable
@@ -124,6 +126,9 @@ class image_converter():
             cv_image = self.bridge.imgmsg_to_cv2(map_data)
         except CvBridgeError as e:
             print(e)
+
+        cv_image = cv_image[:,:,0]
+
         height, width = cv_image.shape
         if(height == 0 or width == 0):
            cv_image = np.zeros((28, 28), dtype = "uint16")

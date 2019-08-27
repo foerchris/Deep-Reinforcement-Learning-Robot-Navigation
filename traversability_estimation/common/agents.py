@@ -68,7 +68,7 @@ class Agent():
             yield map_states[rand_ids, :], depth_states[rand_ids, :], goal_states[rand_ids, :], hidden_states_h[rand_ids, :], hidden_states_c[rand_ids, :], map_states[rand_ids+self.worker_number, :], depth_states[rand_ids+self.worker_number, :], goal_states[rand_ids+self.worker_number, :], actions[rand_ids, :], log_probs[rand_ids, :], returns[rand_ids, :], advantage[rand_ids, :], value[rand_ids, :]
 
 
-    def ppo_update(self, frame_idx, ppo_epochs, map_states, depth_states, goal_states, hidden_states_h, hidden_states_c, actions, log_probs, returns, advantages, values, epoch, clip_param=0.2, discount=0.5, beta=0.001):
+    def ppo_update(self, frame_idx, ppo_epochs, map_states, depth_states, goal_states, hidden_states_h, hidden_states_c, actions, log_probs, returns, advantages, values, epoch, clip_param=0.2, discount=0.5, beta=0.001, max_grad_norm =0.5):
         count_steps = 0
         sum_returns = 0.0
         sum_advantage = 0.0
@@ -84,7 +84,7 @@ class Agent():
         #if(lr>=1e-5):
         # lr=1e-5
        # print('learning rate: ' + str(lr))
-        #self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lr)
+        self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lr)
         #self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lr)
 
 
@@ -129,7 +129,32 @@ class Agent():
                 loss = discount * critic_loss + actor_loss - beta * entropy
 
                 self.optimizer.zero_grad()
+
+
                 loss.backward()
+
+              #  print("not processed cnn_map_goal: " + str(np.max(self.feature_net.cnn_map_goal[0].weight.grad.cpu().numpy())))
+
+              #  print("not processed lstm: " + str(np.max(self.feature_net.lstm.weight_ih_l0.grad.cpu().numpy())))
+
+                nn.utils.clip_grad_norm_(self.feature_net.parameters(),max_grad_norm)
+              #  print("processed cnn_map_goal: " + str(np.max(self.feature_net.cnn_map_goal[0].weight.grad.cpu().numpy())))
+
+                #nn.utils.clip_grad_norm_(self.feature_net.parameters(),max_grad_norm)
+              #  print("first processed lstm: " + str(np.max(self.feature_net.lstm.weight_ih_l0.grad.cpu().numpy())))
+
+               # nn.utils.clip_grad_norm_(self.feature_net.lstm.parameters(),0.1)
+              #  print("second processed lstm: " + str(np.max(self.feature_net.lstm.weight_ih_l0.grad.cpu().numpy())))
+
+              #  print("not processed actor: " + str(np.max(self.ac_model.actor[0].weight.grad.cpu().numpy())))
+              #  print("not processed actor: " + str(np.max(self.ac_model.actor[2].weight.grad.cpu().numpy())))
+
+                nn.utils.clip_grad_norm_(self.ac_model.parameters(),max_grad_norm)
+               # print("processed actor: " + str(np.max(self.ac_model.actor[0].weight.grad.cpu().numpy())))
+             #   print("processed actor: " + str(np.max(self.ac_model.actor[2].weight.grad.cpu().numpy())))
+
+                #for p in model.parameters():
+                    #p.data.add_(-lr, p.grad.data)
                 self.optimizer.step()
 
                 # track statistics

@@ -206,7 +206,7 @@ class robotEnv():
         sleep(0.2)
         self.ic.acceleration_to_high = False
         self.ic.robot_flip_over = False
-
+        self.ic.biggestangularAccelz =0
         return self.get_state()
 
 
@@ -252,6 +252,8 @@ class robotEnv():
 
 
         #if (mean_delta_vel <= 1e-2 and self.number!=1):
+       # if(self.number == 1):
+        #    mean_delta_vel = 1
         if (mean_delta_vel <= 1e-2):
             reward = -1
             EndEpisode = True

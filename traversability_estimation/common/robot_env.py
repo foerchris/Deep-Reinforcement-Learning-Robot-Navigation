@@ -48,7 +48,7 @@ class robotEnv():
         self.episodeFinished = False
         # Variables to calculate the reward
         self.deltaDist = 0.20
-        self.discountFactorMue = 0.1
+        self.discountFactorMue = 0.02
         self.closestDistance = 0
         self.startGoalDistance = 0
         self.lastDistance = 0
@@ -66,7 +66,7 @@ class robotEnv():
         self.observation_space = []
         self.observation_space.append(gym.spaces.Box(low=-1, high=1, shape=(200, 200), dtype=np.float32))
         self.observation_space.append(gym.spaces.Box(low=-1, high=1, shape=(84, 84), dtype=np.float32))
-        self.observation_space.append(gym.spaces.Box(low=-1, high=1, shape=(6, 1), dtype=np.float32))
+        self.observation_space.append(gym.spaces.Box(low=-1, high=1, shape=(9, 1), dtype=np.float32))
 
         self.action_space = gym.spaces.Box(low=-1, high=1, shape=(2, 1), dtype=np.float32)
         self.total_reward = 0
@@ -88,6 +88,7 @@ class robotEnv():
         self.msg.attach(part2)
 
         self.countResetZeroVel = 0
+        self.newRewards = False
 
         self.cell_states = cell_checker(10.0)
 
@@ -146,17 +147,31 @@ class robotEnv():
         goalPosition = self.goalPose.pose.pose.position;
         goalPosition = np.array([goalPosition.x, goalPosition.y, goalPosition.z], dtype=np.float32)
 
+        currentPosition = self.ic.currentRobotPose.pose.pose.position
+        currentPosition = np.array([currentPosition.x, currentPosition.y, currentPosition.z], dtype=np.float32)
+
         eleviationData = np.asarray(eleviationImage, dtype=np.float32)
         depthData = np.asarray(depthImage, dtype=np.float32)
 
         # norrm input data between -1 and 1
         depthData = np.divide(depthData, 10)
-        eleviationData = np.divide(eleviationData, 65536)  # 255
+        eleviationData[0] = np.divide(eleviationData[0], 65536)  # 255
+        eleviationData[1] = np.divide(eleviationData[1], 65536)  # 255
+       # plt.imshow(eleviationData[0],cmap="gray")
+       # plt.show()
+       # plt.imshow(eleviationData[1],cmap="gray")
+       # plt.show()
+        eleviationData[0] = np.add(eleviationData[0],0.25)
+        eleviationData = np.multiply(eleviationData[0],eleviationData[1])
+       # print("eleviationData.shape: " +str(eleviationData.shape))
+       # plt.imshow(eleviationData,cmap="gray")
+       # plt.show()
         goalOrientation = np.divide(goalOrientation, math.pi)
         goalPosition = np.divide(goalPosition, self.maxDistanz)
+        currentPosition =  np.divide(currentPosition, self.maxDistanz)
 
         goalPose = np.concatenate((goalPosition, goalOrientation), axis=None)
-
+        goalPose = np.concatenate((goalPose, currentPosition), axis=None)
         depthData = np.nan_to_num(depthData)
 
         eleviationData = np.asarray(eleviationData, dtype=np.float32)
@@ -166,7 +181,7 @@ class robotEnv():
 
         eleviationData.reshape(1, 200, 200)
         depthData.reshape(1, 84, 84)
-        goalPose.reshape(1, 6)
+        goalPose.reshape(1, 9)
 
         return eleviationData, depthData, goalPose
 
@@ -240,6 +255,8 @@ class robotEnv():
         self.number_of_epsiodes += 1
 
         self.cell_states.reset_possible_cells()
+        self.ic.reach_the_goal = False
+        self.newRewards = False
 
         return self.get_state()
 
@@ -258,11 +275,18 @@ class robotEnv():
 
         currentdistance = self.clcDistance(self.goalPose.pose.pose.position)
         exploredNewArea = False
+        goalAreaReached = False
         if (self.stepCounter == 1):
-            self.cell_states.get_possible_cells(self.ic.currentRobotPose.pose.pose.position)
+            self.cell_states.get_possible_cells(self.ic.currentRobotPose.pose.pose.position, self.goalPose.pose.pose.position)
             self.closestDistance = currentdistance
         else:
-            exploredNewArea = self.cell_states.get_possible_cells(self.ic.currentRobotPose.pose.pose.position)
+            exploredNewArea, goalAreaReached = self.cell_states.get_possible_cells(self.ic.currentRobotPose.pose.pose.position, self.goalPose.pose.pose.position)
+            if(goalAreaReached):
+                self.newRewards = True
+                self.closestDistance = currentdistance
+               # print("goalAreaReached number" + str(self.number) +": " + str(goalAreaReached))
+
+
 
         currentTime = time.time()
         currentTime = currentTime - self.startTime
@@ -279,6 +303,7 @@ class robotEnv():
         mean_delta_vel = self.delta_vel_memory.mean();
 
         EndEpisode = False;
+       # reward = -0.001
         reward = 0
 
         if rospy.get_param("/GETjag" + str(self.number) + "/Error_in_simulator"):
@@ -289,19 +314,24 @@ class robotEnv():
         # print("self.closestDistance" + str(self.closestDistance))
         # print("currentdistance" + str(currentdistance))
 
-        if currentdistance < self.closestDistance:
+        if currentdistance < self.closestDistance: #and self.newRewards:
 
             reward = self.discountFactorMue * (self.closestDistance - currentdistance)
-            if (reward >= 0.1):
-                print("self.stepCounter" + str(self.number) + ": " + str(self.stepCounter))
-                print("self.closestDistance" + str(self.number) + ": " + str(self.closestDistance))
-                print("currentdistance" + str(self.number) + ": " + str(currentdistance))
-                print("currentdistance < self.closestDistance reward_" + str(self.number) + ": " + str(reward))
+            #print("currentdistance < self.closestDistance, reward number" + str(self.number) +": " + str(reward))
+
+            #if (reward >= 0.1):
+               # print("self.stepCounter" + str(self.number) + ": " + str(self.stepCounter))
+               # print("self.closestDistance" + str(self.number) + ": " + str(self.closestDistance))
+               # print("currentdistance" + str(self.number) + ": " + str(currentdistance))
+               # print("currentdistance < self.closestDistance reward_" + str(self.number) + ": " + str(reward))
                 # reward = 0;
             self.closestDistance = currentdistance
 
-        if exploredNewArea:
-            reward += 0.03
+               # if(self.number ==1):
+     #   if exploredNewArea: #and not self.newRewards:
+     #       reward += 0.03
+            #if(self.number == 1):
+               # print("exploredNewArea, reward: " + str(reward))
         # if(self.number ==1):
         #  print("reward" + str(reward))
         # elif currentdistance <= self.lastDistance:
@@ -330,7 +360,7 @@ class robotEnv():
         #     print("var_delta_vel" + str(var_delta_vel))
 
         # if (var_delta_x <= 1e-2 and var_delta_y <= 1e-2):
-        if (mean_delta_vel <= 1e-2):
+        if (mean_delta_vel <= 0.015):
             # if(self.number == 1):
             # print("mean_delta_vel" + str(mean_delta_vel))
             # print("self.delta_set_vel_lin_memory Array" + str(self.delta_set_vel_lin_memory.returnNumpyArray()))
@@ -340,24 +370,26 @@ class robotEnv():
             EndEpisode = True
             self.countResetZeroVel += 1
 
-        if currentdistance <= self.deltaDist:
+      #  if goalAreaReached:
+        if self.ic.reach_the_goal:
             ##reward = 100
-            reward = 0.5 + (self.startGoalDistance * 10 / self.stepCounter)
-            if (self.number == 1):
-                print("currentdistance <= self.deltaDist:" + str(reward))
+            reward = 0.5 + (self.startGoalDistance * 20 / self.stepCounter)
             print("reached Goal")
             EndEpisode = True
             self.number_reached_goal
+            self.ic.reach_the_goal = False
 
         if self.stepCounter >= self.EpisodeLength:
             EndEpisode = True
             self.countResetZeroVel = 0
 
-        if (self.countResetZeroVel > 10):
-            print(self.countResetZeroVel)
-            self.countResetZeroVel = 0
+        if (np.isnan(currenVel)):
             rospy.set_param("/GETjag" + str(self.number) + "/Error_in_simulator", True)
+            print("output_gazebo.txt" + "w")
 
+            file = open("Gazebo Script/output_gazebo.txt", "w")
+            file.write("Unable to set value")
+            file.close()
         # print("current reward: " + str(reward))
         # reward = reward*0.01
         # reward = reward*0.001
@@ -430,16 +462,19 @@ class cell_checker():
         self.env_size = size
         self.range = self.env_size / 8.0
 
-    def get_possible_cells(self, pose):
+    def get_possible_cells(self, pose, goalPose):
         xInRange = False
+        goalInRange = False
+
         for i in range(0, len(self.valueX), 1):
             if (abs(pose.x - self.valueX[i]) < self.range and abs(pose.y - self.valueY[i]) < self.range):
                 del self.valueX[i]
                 del self.valueY[i]
-
+                if (abs(goalPose.x) < self.range and abs(goalPose.y) < self.range):
+                    goalInRange = True
                 xInRange = True
                 break
-        return xInRange
+        return xInRange, goalInRange
 
     def reset_possible_cells(self):
         self.valueX = []

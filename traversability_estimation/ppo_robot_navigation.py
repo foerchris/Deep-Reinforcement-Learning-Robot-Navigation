@@ -72,7 +72,7 @@ envs = SubprocVecEnv(envs)
 #env = robotEnv(1)
 
 
-state_size_map  = envs.observation_space[0].shape[0] * envs.observation_space[0].shape[1]
+state_size_map  = envs.observation_space[0].shape[0] * envs.observation_space[1].shape[1]
 state_size_depth  = envs.observation_space[1].shape[0] * envs.observation_space[1].shape[1]
 state_size_goal   = envs.observation_space[2].shape[0]
 
@@ -146,22 +146,25 @@ def plot(frame_idx, rewards):
 
 #Hyper params:
 hidden_size      = 576*2
-lr               = 1e-3
-lr_decay_epoch   = 300.0
+lstm_layers      = 1
+lr               = 1e-4
+lr_decay_epoch   = 100.0
 init_lr          = lr
 epoch            = 0.0
 
-max_num_steps    = 600
-num_steps        = 2000
-mini_batch_size  = 200
-ppo_epochs       = 4
+max_num_steps    = 2000
+num_steps        = 1500
+mini_batch_size  = 150
+ppo_epochs       = 8
+max_grad_norm    = 0.5
 GAMMA            = 0.99
 GAE_LAMBDA       = 0.95
-PPO_EPSILON      = 0.2
+PPO_EPSILON      = 0.25
 CRICIC_DISCOUNT  = 0.5
-ENTROPY_BETA     = 0.001
+ENTROPY_BETA     = 0.01
 eta              = 0.01
 threshold_reward = 5
+threshold_reached_goal = 2
 #
 
 
@@ -273,7 +276,9 @@ while frame_idx < max_frames and not early_stop:
             #
 
             action = dist.sample()
-            #print("action.cpu(): " + str(action.cpu()))
+           # print("frame_idx: " + str(frame_idx))
+            print("dist.mean.detach()"+ str(dist.mean.detach().cpu()))
+            print("std.cpu(): " + str(std.cpu()))
             # this is a x,1 tensor is kontains alle the possible actions
             # the cpu command move it from a gpu tensor to a cpu tensor
             next_map_state, next_depth_state, next_goal_state, reward, done, _ = envs.step(action.cpu().numpy())
@@ -298,8 +303,14 @@ while frame_idx < max_frames and not early_stop:
                     _, stacked_goal_frames = reset_single_frame(stacked_goal_frames, next_goal_state[i], stack_size, i)
 
                     (single_hidden_state_h, single_hidden_state_c) = agent.feature_net.init_hidden(1)
-                    next_hidden_state_h[0][i] = single_hidden_state_h
-                    next_hidden_state_c[0][i] = single_hidden_state_c
+
+                    for layer in range(0,lstm_layers):
+                        next_hidden_state_h[layer][i] = single_hidden_state_h[layer][0].detach()
+                        next_hidden_state_c[layer][i] = next_hidden_state_c[layer][0].detach()
+
+
+
+                    #next_hidden_state_c[0][i] = single_hidden_state_c.detach()
                    # print("number_of_episodes" + str(number_of_episodes))
                    # print("number_reached_goal" + str(number_reached_goal))
 
@@ -409,6 +420,8 @@ while frame_idx < max_frames and not early_stop:
                     best_reward = mean_test_rewards
 
                 if mean_test_rewards > threshold_reward: early_stop = True
+
+                if mean_reach_goal > threshold_reached_goal: early_stop = True
                 torch.save(agent.feature_net.state_dict(), MODELPATH + '/save_ppo_feature_net.dat')
                 torch.save(agent.ac_model.state_dict(), MODELPATH + '/save_ppo_ac_model.dat')
 
@@ -437,15 +450,15 @@ while frame_idx < max_frames and not early_stop:
     hidden_states_h = torch.cat(hidden_states_h)
     hidden_states_c = torch.cat(hidden_states_c)
 
-    hidden_states_h = hidden_states_h.view(-1, 1, hidden_states_h.shape[2])
-    hidden_states_c = hidden_states_c.view(-1, 1, hidden_states_c.shape[2])
+    hidden_states_h = hidden_states_h.view(-1, lstm_layers,hidden_states_h.shape[2])
+    hidden_states_c = hidden_states_c.view(-1, lstm_layers, hidden_states_c.shape[2])
 
 
     actions = torch.cat(actions)
     advantages = returns - values
 
     epoch += 1.0
-    agent.ppo_update(frame_idx, ppo_epochs,  map_states, depth_states, goal_states, hidden_states_h, hidden_states_c , actions, log_probs, returns, advantages, values, epoch, PPO_EPSILON, CRICIC_DISCOUNT, ENTROPY_BETA)
+    agent.ppo_update(frame_idx, ppo_epochs,  map_states, depth_states, goal_states, hidden_states_h, hidden_states_c , actions, log_probs, returns, advantages, values, epoch, PPO_EPSILON, CRICIC_DISCOUNT, ENTROPY_BETA, max_grad_norm)
 
 
 
@@ -527,8 +540,11 @@ while frame_idx < eval_steps :
                     _, stacked_goal_frames = reset_single_frame(stacked_goal_frames, next_goal_state[i], stack_size, i)
 
                     (single_hidden_state_h, single_hidden_state_c) = agent.feature_net.init_hidden(1)
-                    next_hidden_state_h[0][i] = single_hidden_state_h
-                    next_hidden_state_c[0][i] = single_hidden_state_c
+
+                    for layer in range(0,lstm_layers):
+                        next_hidden_state_h[layer][i] = single_hidden_state_h[layer][0].detach()
+                        next_hidden_state_c[layer][i] = next_hidden_state_c[layer][0].detach()
+
 
             next_map_state, stacked_map_frames = stack_frames(stacked_map_frames,next_map_state,stack_size, False)
             next_depth_state, stacked_depth_frames = stack_frames(stacked_depth_frames,next_depth_state,stack_size, False)
