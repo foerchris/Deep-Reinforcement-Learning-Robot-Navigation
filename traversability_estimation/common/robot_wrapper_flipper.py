@@ -49,6 +49,8 @@ class image_converter():
         self.countPub = 0
         self.robotAction = 7
         self.main()
+        self.last_angular_velocity_y = 0
+        self.last_nsecs = 0
     def stop(self):
         self.flipperVelFront = 0
         self.flipperVelRear = 0
@@ -106,17 +108,21 @@ class image_converter():
     # callback to get the goal robot pose as position (x,y,z) and orientation as quaternion (x,y,z,w)
     def imuCallback(self, imu_data):
         self.imu_data = imu_data
-        angularAccelz = self.imu_data.linear_acceleration.z
-        maxAngularAccel = 100
-        #if(self.number ==1):
+        if(self.last_nsecs !=0):
+            angularAccely = abs(self.imu_data.angular_velocity.y - self.last_angular_velocity_y) / ((self.imu_data.header.stamp.nsecs - self.last_nsecs) * 1000)
 
-        if(angularAccelz> self.biggestangularAccelz):
-            print("angularAccelz: " + str(angularAccelz))
-            self.biggestangularAccelz = angularAccelz
-        if (angularAccelz >= maxAngularAccel):
-            self.acceleration_to_high = True
-            self.accelZ = angularAccelz
+            maxAngularAccel = 5
+            #if(self.number ==1):
 
+            if(angularAccely> self.biggestangularAccelz):
+                print("angularAccelz: " + str(angularAccely))
+                self.biggestangularAccelz = angularAccely
+            if (angularAccely >= maxAngularAccel):
+                self.acceleration_to_high = True
+                self.accelZ = angularAccely
+
+        self.last_angular_velocity_y = self.imu_data.angular_velocity.y
+        self.last_nsecs = self.imu_data.header.stamp.nsecs
 
     # return the eleviation map image with [200,200] Pixel and saves it to a global variable
     def robotGroundMapCallback(self, map_data):
@@ -127,12 +133,15 @@ class image_converter():
         except CvBridgeError as e:
             print(e)
 
-        cv_image = cv_image[:,:,0]
+        image = cv_image[:, :, 0]
 
         height, width = cv_image.shape
         if(height == 0 or width == 0):
-           cv_image = np.zeros((28, 28), dtype = "uint16")
-        self.robotGroundMap = np.asarray(cv2.resize(cv_image, (28, 28)))
+            image = np.zeros((28, 28), dtype = "float32")
+        self.robotGroundMap = np.asarray(cv2.resize(image, (28, 28)))
+
+
+
 
 
 

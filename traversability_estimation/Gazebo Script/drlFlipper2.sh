@@ -83,13 +83,14 @@ do
 	done
 	sleep 2
 		
-	#i=1
-	#while [ $i -lt 3 ]
-	#do
-	#	roslaunch flipper_control FlipperControl.launch namespace:="$namespace$i" > /dev/null 2>&1 &
-	#	PIDs+=($!)
-	#	i=$((i+1))
-	#done
+	
+	i=1
+	while [ $i -lt 3 ]
+	do
+		roslaunch flipper_control FlipperControl.launch namespace:="$namespace$i" > /dev/null 2>&1 &
+		PIDs+=($!)
+		i=$((i+1))
+	done
 	
 	echo "[$(date +"%T")]: Ready to Start DRL Agent"
 	i=1

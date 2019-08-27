@@ -155,15 +155,17 @@ class robotEnv():
 
         # norrm input data between -1 and 1
         depthData = np.divide(depthData, 10)
-        eleviationData[0] = np.divide(eleviationData[0], 65536)  # 255
-        eleviationData[1] = np.divide(eleviationData[1], 65536)  # 255
+        #eleviationData[0] = np.divide(eleviationData[0], 65536)  # 255
+        #eleviationData[1] = np.divide(eleviationData[1], 65536)  # 255
        # plt.imshow(eleviationData[0],cmap="gray")
        # plt.show()
        # plt.imshow(eleviationData[1],cmap="gray")
        # plt.show()
-        eleviationData[0] = np.add(eleviationData[0],0.25)
-        eleviationData = np.multiply(eleviationData[0],eleviationData[1])
-       # print("eleviationData.shape: " +str(eleviationData.shape))
+        #eleviationData[0] = np.add(eleviationData[0],0.)
+        #eleviationData = np.multiply(eleviationData[0],eleviationData[1])
+
+        eleviationData = eleviationData[0]
+        # print("eleviationData.shape: " +str(eleviationData.shape))
        # plt.imshow(eleviationData,cmap="gray")
        # plt.show()
         goalOrientation = np.divide(goalOrientation, math.pi)

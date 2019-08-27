@@ -123,7 +123,7 @@ class image_converter():
             print(e)
         #print(cv_image.shape)
         image = cv_image[:,:,0]
-        alpha = cv_image[:,:,3]
+        alpha = cv_image[:,:,1]
         map = np.stack((cv2.resize(image, (200, 200)),cv2.resize(alpha, (200, 200))))
         #print(map.shape)
 
