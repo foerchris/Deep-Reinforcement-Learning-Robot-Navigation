@@ -1,14 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="006d84f8-4341-4757-8cb1-e35d54703074" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/drlFlipper2.sh" beforeDir="false" afterPath="$PROJECT_DIR$/Gazebo Script/drlFlipper2.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/robot_env.py" beforeDir="false" afterPath="$PROJECT_DIR$/common/robot_env.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/robot_wrapper.py" beforeDir="false" afterPath="$PROJECT_DIR$/common/robot_wrapper.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/robot_wrapper_flipper.py" beforeDir="false" afterPath="$PROJECT_DIR$/common/robot_wrapper_flipper.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test7.py" beforeDir="false" afterPath="$PROJECT_DIR$/test7.py" afterDir="false" />
-    </list>
+    <list default="true" id="006d84f8-4341-4757-8cb1-e35d54703074" name="Default Changelist" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -71,7 +64,7 @@
     <session id="-460673689">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="126" />
+          <entry key="project.closed" value="127" />
           <entry key="project.open.time.0" value="4" />
           <entry key="project.open.time.1" value="1" />
           <entry key="project.open.time.10" value="2" />
@@ -232,7 +225,7 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/common/robot_wrapper_flipper.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="328">
+            <state relative-caret-position="723">
               <caret line="139" column="55" selection-start-line="139" selection-start-column="55" selection-end-line="139" selection-end-column="55" />
             </state>
           </provider>
@@ -592,7 +585,7 @@
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.32937366" />
-      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.49842104" visible="true" weight="0.3911353" />
+      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.49842104" weight="0.3911353" />
       <window_info anchor="bottom" id="Debug" order="3" sideWeight="0.4986849" weight="0.44360086" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -974,7 +967,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/common/robot_wrapper_flipper.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="328">
+        <state relative-caret-position="723">
           <caret line="139" column="55" selection-start-line="139" selection-start-column="55" selection-end-line="139" selection-end-column="55" />
         </state>
       </provider>
