@@ -68,17 +68,17 @@ class FeatureNetwork(nn.Module):
             if m.bias is not None:
                 torch.nn.init.zeros_(m.bias)
         elif isinstance(m, nn.LSTM):
-            for param in m.parameters():
-                if len(param.shape) >= 2:
-                    torch.nn.init.orthogonal_(param.data)
-                else:
-                    torch.nn.init.normal_(param.data)
+            for name, p in self.named_parameters():
+                if 'weight' in name:
+                    init.orthogonal_(p)
+                elif 'bias' in name:
+                    init.constant_(p, 0)
         elif isinstance(m, nn.LSTMCell):
-            for param in m.parameters():
-                if len(param.shape) >= 2:
-                    torch.nn.init.orthogonal_(param.data)
-                else:
-                    torch.nn.init.normal_(param.data)
+            for name, p in self.named_parameters():
+                if 'weight' in name:
+                    init.orthogonal_(p)
+                elif 'bias' in name:
+                    init.constant_(p, 0)
 
     def init_hidden(self, batch_size):
         # Before we've done anything, we dont have any hidden state.
@@ -135,14 +135,15 @@ class ActorCritic(nn.Module):
 
         self.critic = nn.Sequential(
             nn.Linear(hidden_size, hidden_size),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Linear(hidden_size, 1)
         )
 
         self.actor = nn.Sequential(
             nn.Linear(hidden_size, hidden_size),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Linear(hidden_size, num_outputs),
+            nn.Tanh()
         )
         self.log_std = nn.Parameter(torch.ones(1, num_outputs) * std)
 

@@ -27,6 +27,7 @@ import matplotlib.pyplot as plt
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from math import fabs
 
 # This class proveds the interaction between the robot and the DQN Agent
 class robotEnv():
@@ -54,7 +55,7 @@ class robotEnv():
         self.delta_vel_memory = Memory(10)
 
         self.lastTime = 0
-
+        self.angl_acc = 0
         self.observation_space = []
         self.observation_space.append(gym.spaces.Box(low=-1, high=1, shape=(28,28),dtype = np.float32))
         self.observation_space.append(gym.spaces.Box(low=-1, high=1, shape=(7,1),dtype = np.float32))
@@ -106,8 +107,7 @@ class robotEnv():
         info = {}
         robotGroundData, currentPose = self.get_state()
         self.stopSteps()
-
-        return  robotGroundData, currentPose, reward, d, info
+        return  robotGroundData, currentPose, reward, d, self.angl_acc, info
 
 
     def get_state(self):
@@ -204,7 +204,7 @@ class robotEnv():
         self.lastTime = self.startTime
 
         sleep(0.2)
-        self.ic.acceleration_to_high = False
+        self.ic.acceleration_to_high = 0
         self.ic.robot_flip_over = False
         self.ic.biggestangularAccelz =0
         return self.get_state()
@@ -236,13 +236,17 @@ class robotEnv():
             reward = self.discountFactorMue*(self.closestDistance-currentdistance)
             self.closestDistance = currentdistance
 
-        if (self.ic.acceleration_to_high):
-            print(str(self.number) + "acceleration_to_high")
-            print("accel z:" + str(self.ic.accelZ))
+        self.angl_acc = 0
 
-            reward = -1
-            EndEpisode = True
-            self.ic.acceleration_to_high = False
+        if (self.ic.acceleration_to_high != 0):
+            #print(str(self.number) + "acceleration_to_high")
+            #print("accel z:" + str(self.ic.accelZ))
+            self.angl_acc = self.ic.acceleration_to_high
+            reward = -self.ic.acceleration_to_high/15
+            #EndEpisode = True
+            print(str(self.number) + "reward: " + str(reward))
+
+            self.ic.acceleration_to_high = 0
 
 
         if(self.ic.robot_flip_over):

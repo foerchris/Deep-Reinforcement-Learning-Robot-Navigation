@@ -84,8 +84,8 @@ class Agent():
         #if(lr>=1e-5):
         # lr=1e-5
        # print('learning rate: ' + str(lr))
-        self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lr)
         #self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lr)
+        self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lr)
 
 
 

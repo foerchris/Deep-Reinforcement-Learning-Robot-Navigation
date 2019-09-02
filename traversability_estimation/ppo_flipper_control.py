@@ -158,7 +158,7 @@ CRICIC_DISCOUNT  = 0.5
 ENTROPY_BETA     = 0.01
 eta              = 0.01
 threshold_reward = 5
-threshold_reached_goal = 0.95
+threshold_reached_goal = 2
 #
 
 f= open("train_getjag/ppo_flipper/Tensorboard/Hyperparameters.txt","w+")
@@ -198,7 +198,7 @@ for i in range(0, num_envs):
 envs.set_episode_length(episode_length)
 
 
-early_stop = False
+early_stop = True
 
 best_reach_goal = 0
 
@@ -448,6 +448,12 @@ number_of_episodes = 0
 number_reached_goal = 0
 reach_goal = []
 entropy = 0
+total_angluar_acc = []
+
+for i in range(0, num_envs):
+    done_cache.append(False)
+    step_count.append(0)
+    total_reward.append(0)
 
 agent.feature_net.eval()
 agent.ac_model.eval()
@@ -457,8 +463,11 @@ steps_idx = 0
 while frame_idx < eval_steps:
     with torch.no_grad():
         for _ in range(num_steps):
-
+            print(frame_idx)
+            print(type(map_state))
             map_state = torch.FloatTensor(map_state).to(device)
+            print(type(orientation_state))
+
             orientation_state = torch.FloatTensor(orientation_state).to(device)
 
 
@@ -472,13 +481,16 @@ while frame_idx < eval_steps:
 
 
             action = dist.mean.detach()
-            print("action" + str(action))
+            #print("action" + str(action))
             action = dist.mean.detach()
-            print("action" + str(action))
+            #print("action" + str(action))
 
             # this is a x,1 tensor is kontains alle the possible actions
             # the cpu command move it from a gpu tensor to a cpu tensor
-            next_map_state, next_orientation_state, reward, done, _ = envs.step(action.cpu().numpy())
+            next_map_state, next_orientation_state, reward, done, angl_acc, _ = envs.step(action.cpu().numpy())
+
+            print(angl_acc)
+            total_angluar_acc.append(np.mean(angl_acc))
 
 
             for i in range(0, num_envs):
@@ -518,9 +530,9 @@ while frame_idx < eval_steps:
             #torch.cuda.empty_cache()
             steps_idx += 1
 
-
+            frame_idx += 1
             next_map_state = torch.FloatTensor(next_map_state).to(device)
-            orientation_state = torch.FloatTensor(orientation_state).to(device)
+            next_orientation_state = torch.FloatTensor(next_orientation_state).to(device)
 
             hidden_state_h = next_hidden_state_h
             hidden_state_c = next_hidden_state_c
@@ -547,4 +559,8 @@ number_of_episodes = 0
 summary.value.add(tag='Mittelwert/anzahl Ziel erreicht', simple_value=float(number_reached_goal))
 number_reached_goal = 0
 
-summary_writer.add_summary(summary, frame_idx + steps_idx)
+summary.value.add(tag='Mittelwert/Mittelwert Winkelbeschleunigung', simple_value=float(np.mean(total_angluar_acc)))
+
+total_angluar_acc = []
+
+summary_writer.add_summary(summary, frame_idx)

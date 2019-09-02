@@ -39,8 +39,8 @@ from agents import Agent
 
 MODELPATH = os.path.join(dirname, 'train_getjag/ppo/Model')
 
-load_model = False
-last_number_of_frames = 0
+load_model = True
+last_number_of_frames = 198000
 
 frame_idx  = 0 + last_number_of_frames
 num_envs_possible = 16;

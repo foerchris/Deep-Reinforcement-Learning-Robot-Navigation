@@ -11,10 +11,10 @@ def worker(remote, parent_remote, env_fn_wrapper):
     while True:
         cmd, data = remote.recv()
         if cmd == 'step':
-            obs_1, obs_2,reward, done, info = env.step(data)
+            obs_1, obs_2,reward, done, angular_acc, info = env.step(data)
             if done:
                 obs_1, obs_2 = env.reset()
-            remote.send((obs_1, obs_2, reward, done, info))
+            remote.send((obs_1, obs_2, reward, done, angular_acc, info))
         elif cmd == 'reset':
             obs_1, obs_2 = env.reset()
             remote.send((obs_1, obs_2))
@@ -195,8 +195,8 @@ class SubprocVecEnv(VecEnv):
     def step_wait(self):
         results = [remote.recv() for remote in self.remotes]
         self.waiting = False
-        obs_1, obs_2, rews, dones, infos = zip(*results)
-        return np.stack(obs_1), np.stack(obs_2), np.stack(rews), np.stack(dones), infos
+        obs_1, obs_2, rews, dones, angl_acc, infos = zip(*results)
+        return np.stack(obs_1), np.stack(obs_2), np.stack(rews), np.stack(dones), np.stack(angl_acc), infos
 
     def reset(self):
         for remote in self.remotes:
@@ -226,8 +226,8 @@ class SubprocVecEnv(VecEnv):
         if (number > 0 and number <= self.num_envs):
             results = [remote.recv() for remote in self.remotes[number-1:number]]
             self.waiting = False
-            obs_1, obs_2, rews, dones, infos = zip(*results)
-            return np.stack(obs_1), np.stack(obs_2), np.stack(rews), np.stack(dones), infos
+            obs_1, obs_2, rews, dones,angl_acc, infos = zip(*results)
+            return np.stack(obs_1), np.stack(obs_2), np.stack(rews), np.stack(dones), np.stack(angl_acc), infos
         else:
             print('multi_env step_wait_test error, number: ' + str(number) + ' is out of range')
 

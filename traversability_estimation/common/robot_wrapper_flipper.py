@@ -28,6 +28,7 @@ class image_converter():
         self.number = number
         #if(number==1):
         self.bridge = CvBridge()
+        self.bridge2 = CvBridge()
 
         self.flipperVelFront = Float64()
         self.flipperVelRear = Float64()
@@ -39,7 +40,7 @@ class image_converter():
         self.imu_data = Imu()
         self.accelZ = 0
 
-        self.acceleration_to_high = False
+        self.acceleration_to_high = 0
         self.tip_over_angle = math.pi/4 + math.pi/6
         self.robot_flip_over = False
         self.biggestangularAccelz = 0
@@ -51,6 +52,7 @@ class image_converter():
         self.main()
         self.last_angular_velocity_y = 0
         self.last_nsecs = 0
+
     def stop(self):
         self.flipperVelFront = 0
         self.flipperVelRear = 0
@@ -109,16 +111,22 @@ class image_converter():
     def imuCallback(self, imu_data):
         self.imu_data = imu_data
         if(self.last_nsecs !=0):
-            angularAccely = abs(self.imu_data.angular_velocity.y - self.last_angular_velocity_y) / ((self.imu_data.header.stamp.nsecs - self.last_nsecs) * 1000)
+            angularAccely = abs(self.imu_data.angular_velocity.y - self.last_angular_velocity_y)
+            maxAngularAccel = 1.2
+          #  if(self.number ==1):
 
-            maxAngularAccel = 5
-            #if(self.number ==1):
+            #    if(angularAccely> self.biggestangularAccelz):
+            #        print("self.imu_data.angular_velocity.y: " + str(self.imu_data.angular_velocity.y))
+            #        print("self.last_angular_velocity_y: " + str(self.last_angular_velocity_y))
 
-            if(angularAccely> self.biggestangularAccelz):
-                print("angularAccelz: " + str(angularAccely))
-                self.biggestangularAccelz = angularAccely
+            #        print("angularAccelz: " + str(angularAccely))
+             #       self.biggestangularAccelz = angularAccely
+
             if (angularAccely >= maxAngularAccel):
-                self.acceleration_to_high = True
+             #   if(self.number == 1):
+             #       print("self.acceleration_to_high: " + str(angularAccely))
+
+                self.acceleration_to_high = angularAccely
                 self.accelZ = angularAccely
 
         self.last_angular_velocity_y = self.imu_data.angular_velocity.y
@@ -135,9 +143,6 @@ class image_converter():
 
         image = cv_image[:, :, 0]
 
-        height, width = cv_image.shape
-        if(height == 0 or width == 0):
-            image = np.zeros((28, 28), dtype = "float32")
         self.robotGroundMap = np.asarray(cv2.resize(image, (28, 28)))
 
 
