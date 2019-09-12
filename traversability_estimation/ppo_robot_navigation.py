@@ -40,7 +40,7 @@ from agents import Agent
 MODELPATH = os.path.join(dirname, 'train_getjag/ppo/Model')
 
 load_model = True
-last_number_of_frames = 198000
+last_number_of_frames = 24000
 
 frame_idx  = 0 + last_number_of_frames
 num_envs_possible = 16;
@@ -146,16 +146,16 @@ def plot(frame_idx, rewards):
 
 #Hyper params:
 hidden_size      = 576*2
-lstm_layers      = 1
-lr               = 1e-4
+lstm_layers      = 3
+lr               = 1e-3
 lr_decay_epoch   = 100.0
 init_lr          = lr
 epoch            = 0.0
 
-max_num_steps    = 2000
+max_num_steps    = 1000
 num_steps        = 1500
 mini_batch_size  = 150
-ppo_epochs       = 8
+ppo_epochs       = 6
 max_grad_norm    = 0.5
 GAMMA            = 0.99
 GAE_LAMBDA       = 0.95
@@ -277,8 +277,8 @@ while frame_idx < max_frames and not early_stop:
 
             action = dist.sample()
            # print("frame_idx: " + str(frame_idx))
-            print("dist.mean.detach()"+ str(dist.mean.detach().cpu()))
-            print("std.cpu(): " + str(std.cpu()))
+           # print("dist.mean.detach()"+ str(dist.mean.detach().cpu()))
+           # print("std.cpu(): " + str(std.cpu()))
             # this is a x,1 tensor is kontains alle the possible actions
             # the cpu command move it from a gpu tensor to a cpu tensor
             next_map_state, next_depth_state, next_goal_state, reward, done, _ = envs.step(action.cpu().numpy())

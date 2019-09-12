@@ -76,7 +76,7 @@ class FeatureNetwork(nn.Module):
             nn.MaxPool2d(2, stride=2)
         )
 
-        self.lstm = nn.LSTM(hidden_size, hidden_size, num_layers=1)
+        self.lstm = nn.LSTM(hidden_size, hidden_size, num_layers=3)
 
         #self.hidden = self.init_hidden()
     def init_weights(self,m):
@@ -139,8 +139,8 @@ class FeatureNetwork(nn.Module):
         # Refer to the Pytorch documentation to see exactly
         # why they have this dimensionality.
         # The axes semantics are (num_layers, minibatch_size, hidden_dim)
-        return (torch.zeros(1, batch_size, self.hidden_dim, device=self.device),
-                torch.zeros(1, batch_size, self.hidden_dim, device=self.device))
+        return (torch.zeros(3, batch_size, self.hidden_dim, device=self.device),
+                torch.zeros(3, batch_size, self.hidden_dim, device=self.device))
 
     def forward(self, map_state, depth_state ,goal_state, hidden_h, hidden_c):
 
@@ -211,7 +211,7 @@ class FeatureNetwork(nn.Module):
 
         hidden_h = self.hidden[0]
         hidden_c = self.hidden[1]
-        map_goal_depth = map_goal_depth.view(-1, map_goal_depth.shape[2])
+        #map_goal_depth = map_goal_depth.view(-1, map_goal_depth.shape[2])
 
         #return map_goal_depth, hidden_h.detach(), hidden_c.detach()
         return lstm_out, hidden_h, hidden_c
@@ -227,19 +227,27 @@ class ActorCritic(nn.Module):
 
         self.critic = nn.Sequential(
             nn.Linear(hidden_size, hidden_size),
-            nn.Tanh(),
-            #nn.ReLU(),
-            #nn.Linear(hidden_size, hidden_size),
             #nn.Tanh(),
+            nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
+            #nn.Tanh(),
+            nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
+            #nn.Tanh(),
+            nn.ReLU(),
             nn.Linear(hidden_size, 1)
         )
 
         self.actor = nn.Sequential(
             nn.Linear(hidden_size, hidden_size),
-            nn.Tanh(),
-            #nn.ReLU(),
-           # nn.Linear(hidden_size, hidden_size),
-           # nn.Tanh(),
+            #nn.Tanh(),
+            nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
+            #nn.Tanh(),
+            nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
+            #nn.Tanh(),
+            nn.ReLU(),
             nn.Linear(hidden_size, num_outputs),
             nn.Tanh()
         )

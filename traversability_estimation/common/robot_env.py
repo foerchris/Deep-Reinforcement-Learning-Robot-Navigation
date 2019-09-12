@@ -48,7 +48,7 @@ class robotEnv():
         self.episodeFinished = False
         # Variables to calculate the reward
         self.deltaDist = 0.20
-        self.discountFactorMue = 0.02
+        self.discountFactorMue = 0.1
         self.closestDistance = 0
         self.startGoalDistance = 0
         self.lastDistance = 0
@@ -164,10 +164,11 @@ class robotEnv():
         #eleviationData[0] = np.add(eleviationData[0],0.)
         #eleviationData = np.multiply(eleviationData[0],eleviationData[1])
 
-        eleviationData = eleviationData[0]
+       # eleviationData = eleviationData[0]
         # print("eleviationData.shape: " +str(eleviationData.shape))
-       # plt.imshow(eleviationData,cmap="gray")
-       # plt.show()
+        #if(self.number ==1):
+            #plt.imshow(eleviationData,cmap="gray")
+            #plt.show()
         goalOrientation = np.divide(goalOrientation, math.pi)
         goalPosition = np.divide(goalPosition, self.maxDistanz)
         currentPosition =  np.divide(currentPosition, self.maxDistanz)
@@ -175,6 +176,7 @@ class robotEnv():
         goalPose = np.concatenate((goalPosition, goalOrientation), axis=None)
         goalPose = np.concatenate((goalPose, currentPosition), axis=None)
         depthData = np.nan_to_num(depthData)
+        eleviationData = np.nan_to_num(eleviationData)
 
         eleviationData = np.asarray(eleviationData, dtype=np.float32)
         depthData = np.asarray(depthData, dtype=np.float32)
@@ -285,7 +287,7 @@ class robotEnv():
             exploredNewArea, goalAreaReached = self.cell_states.get_possible_cells(self.ic.currentRobotPose.pose.pose.position, self.goalPose.pose.pose.position)
             if(goalAreaReached):
                 self.newRewards = True
-                self.closestDistance = currentdistance
+              #  self.closestDistance = currentdistance
                # print("goalAreaReached number" + str(self.number) +": " + str(goalAreaReached))
 
 
@@ -318,7 +320,9 @@ class robotEnv():
 
         if currentdistance < self.closestDistance: #and self.newRewards:
 
-            reward = self.discountFactorMue * (self.closestDistance - currentdistance)
+           # reward = self.discountFactorMue * (self.closestDistance - currentdistance)
+          #  if(self.number ==1):
+           #     print("reward: " + str(reward))
             #print("currentdistance < self.closestDistance, reward number" + str(self.number) +": " + str(reward))
 
             #if (reward >= 0.1):
@@ -330,13 +334,13 @@ class robotEnv():
             self.closestDistance = currentdistance
 
                # if(self.number ==1):
-     #   if exploredNewArea: #and not self.newRewards:
-     #       reward += 0.03
+        #if exploredNewArea: #and not self.newRewards:
+           # reward += 0.03
             #if(self.number == 1):
                # print("exploredNewArea, reward: " + str(reward))
         # if(self.number ==1):
         #  print("reward" + str(reward))
-        # elif currentdistance <= self.lastDistance:
+      #  elif currentdistance <= self.lastDistance:
         #   reward = 0.5 + (self.startGoalDistance / currentTime)
 
         #         explored = (eleviationImage > 100).sum()
@@ -376,6 +380,8 @@ class robotEnv():
         if self.ic.reach_the_goal:
             ##reward = 100
             reward = 0.5 + (self.startGoalDistance * 20 / self.stepCounter)
+            if(self.number ==1):
+                print("reward: " + str(reward))
             print("reached Goal")
             EndEpisode = True
             self.number_reached_goal

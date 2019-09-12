@@ -31,7 +31,7 @@ from tensorboardX import SummaryWriter
 
 
 from multiprocessing_env_flipper import SubprocVecEnv
-from robot_env_flipper import robotEnv
+from robot_env_flipper_nomap import robotEnv
 
 from flipper_agents import Agent
 from inspect import currentframe, getframeinfo

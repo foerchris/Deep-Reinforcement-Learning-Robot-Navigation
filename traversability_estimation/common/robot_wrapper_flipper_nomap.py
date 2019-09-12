@@ -11,10 +11,13 @@ from dynamixel_msgs.msg import JointState
 from sensor_msgs.msg import Image
 
 from std_msgs.msg import Float64
+from std_msgs.msg import Float32
 
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Bool
 from sensor_msgs.msg import Imu
+from sensor_msgs.msg import Range
+
 from tf.transformations import euler_from_quaternion
 import time
 
@@ -34,6 +37,12 @@ class image_converter():
 
         self.flipperVelFront = Float64()
         self.flipperVelRear = Float64()
+
+        self.frontUss = float()
+        self.mid1Uss = float()
+        self.mid2Uss = float()
+        self.rearUss = float()
+
         self.startStopRobot = Bool()
         self.startStopRobot.data = False;
         self.VERBOSE = True
@@ -81,6 +90,28 @@ class image_converter():
         self.flipperVelFront = action[0]
         self.flipperVelRear = action[1]
 
+
+    def frontUSS_Callback(self, uss_data):
+        '''Callback function of subscribed topic.
+              Here images get converted and features detected'''
+        self.frontUss=uss_data.range
+
+    def mid1USS_Callback(self, uss_data):
+        '''Callback function of subscribed topic.
+              Here images get converted and features detected'''
+        self.mid1Uss=uss_data.range
+
+    def mid2USS_Callback(self, uss_data):
+        '''Callback function of subscribed topic.
+              Here images get converted and features detected'''
+        self.mid1Uss=uss_data.range
+
+    def rearUSS_Callback(self, uss_data):
+        '''Callback function of subscribed topic.
+              Here images get converted and features detected'''
+        self.rearUss=uss_data.range
+
+
     # callback to get the current robot pose as position (x,y,z) and orientation as quaternion (x,y,z,w)
     # also transmits the robot action as velocities
     def robotCallback(self,odom_data):
@@ -91,8 +122,8 @@ class image_converter():
         #    self.flipperVelRear = 0
 
         self.startStopRobotPub.publish( self.startStopRobot)
-        #self.robotFlipperFrontPub.publish( self.flipperVelFront)
-        #self.robotFlipperRearPub.publish( self.flipperVelRear)
+        self.robotFlipperFrontPub.publish( self.flipperVelFront)
+        self.robotFlipperRearPub.publish( self.flipperVelRear)
 
         roll, pitch, yaw = self.returnRollPitchYaw(self.currentPose.pose.pose.orientation)
 
@@ -144,21 +175,47 @@ class image_converter():
         self.last_angular_velocity_y = self.imu_data.angular_velocity.y
         self.last_nsecs = self.imu_data.header.stamp.nsecs
 
-    # return the eleviation map image with [200,200] Pixel and saves it to a global variable
-    def robotGroundMapCallback(self, map_data):
-        '''Callback function of subscribed topic.
-        Here images get converted and features detected'''
+    def depthImageCallback(self, depth_data):
+        #print("depthImageCallback");
         try:
-            cv_image = self.bridge.imgmsg_to_cv2(map_data)
+            cv_image = self.bridge.imgmsg_to_cv2(depth_data,"32FC1")
         except CvBridgeError as e:
             print(e)
+        #plt.imshow(cv_image,cmap="gray")
+        #plt.show()
 
-        image = cv_image[:, :, 0]
+        cv_image = np.asarray(cv_image, dtype=np.float32)
+        cv_image = np.nan_to_num(cv_image)
 
-        self.robotGroundMap = np.asarray(cv2.resize(image, (28, 28)))
+        #if(self.number ==1):
+           # print(cv_image.shape)
+          #  plt.imshow(cv_image,cmap="gray")
+          #  plt.show()
+         #   print(cv_image)
 
+        h=150
+        w=640
 
+        y=cv_image.shape[0]-h
+        x=cv_image.shape[1]-w
 
+        crop_img = cv_image[y:y+h, x:x+w]
+        #if(self.number ==1):
+           # plt.imshow(crop_img,cmap="gray")
+          #  plt.show()
+
+         #   print(crop_img.shape)
+
+        #plt.imshow(crop_img,cmap="gray")
+        #plt.show()
+        #crop_img[crop_img > 5] =  5
+
+        self.depthImage = cv2.resize(crop_img, (28, 28))
+        #if(self.number ==1):
+          #  plt.imshow(self.depthImage,cmap="gray")
+          #  plt.show()
+
+            #print(crop_img.shape)
 
 
 
@@ -184,8 +241,19 @@ class image_converter():
         self.flipperRearPoseSub = rospy.Subscriber("GETjag" + str(self.number) + "/flipper_rear_controller/state", JointState, self.flipperRearPose)
 
         self.goalPoseSub = rospy.Subscriber("/GETjag" + str(self.number) + "/goal_pose", Odometry, self.goalCallback)
-        self.robotGroundMapSub = rospy.Subscriber("/GETjag" + str(self.number) + "/elevation_robot_ground_map", Image,
-                                             self.robotGroundMapCallback, queue_size=1)
+
+        frontUSS_Sub = rospy.Subscriber("/GETjag" + "1" +"/ground_clearance_1", Range,
+                                         self.frontUSS_Callback, queue_size=1)
+
+        mid1USS_Sub = rospy.Subscriber("/GETjag" + "1" +"/ground_clearance_2", Range,
+                                         self.mid1USS_Callback, queue_size=1)
+        mid2USS_Sub = rospy.Subscriber("/GETjag" + "1" +"/ground_clearance_3", Range,
+                                         self.mid2USS_Callback, queue_size=1)
+        rearUSS_Sub = rospy.Subscriber("/GETjag" + "1" +"/ground_clearance_4", Range,
+                                         self.rearUSS_Callback, queue_size=1)
+
+        self.depthImageSub = rospy.Subscriber("/GETjag" + str(self.number) + "/xtion/depth/image_raw", Image,
+                                             self.depthImageCallback, queue_size=1)
 
         self.robotImuCallback = rospy.Subscriber("/GETjag" + str(self.number) + "/imu/data", Imu,
                                              self.imuCallback, queue_size=1)

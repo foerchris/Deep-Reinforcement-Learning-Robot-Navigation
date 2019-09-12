@@ -15,7 +15,7 @@ import rospy
 
 from nav_msgs.msg import Odometry
 
-from robot_wrapper_flipper import image_converter
+from robot_wrapper_flipper_nomap import image_converter
 from tf.transformations import euler_from_quaternion
 import gym
 
@@ -58,7 +58,7 @@ class robotEnv():
         self.angl_acc = 0
         self.observation_space = []
         self.observation_space.append(gym.spaces.Box(low=-1, high=1, shape=(28,28),dtype = np.float32))
-        self.observation_space.append(gym.spaces.Box(low=-1, high=1, shape=(7,1),dtype = np.float32))
+        self.observation_space.append(gym.spaces.Box(low=-1, high=1, shape=(9,1),dtype = np.float32))
 
         self.action_space = gym.spaces.Box(low=-1, high=1, shape=(2,1), dtype = np.float32)
         self.total_reward = 0
@@ -124,13 +124,15 @@ class robotEnv():
 
 
         # norrm input data between -1 and 1
-        robotGroundMap =  np.divide(robotGroundMap, 65536) #255
+        robotGroundMap =  np.divide(robotGroundMap, 5) #255
 
         currentOrientation = np.divide(currentOrientation,math.pi)
         currentOrientation = np.append(currentOrientation, np.divide(self.flipperPoseFront.current_pos,m.pi))
         currentOrientation = np.append(currentOrientation, np.divide(self.flipperPoseRear.current_pos,m.pi))
-        currentOrientation = np.append(currentOrientation, np.divide(self.ic.imu_data.linear_acceleration.x,20))
-        currentOrientation = np.append(currentOrientation, np.divide(self.ic.imu_data.linear_acceleration.y,20))
+        currentOrientation = np.append(currentOrientation, self.ic.frontUss/2.0)
+        currentOrientation = np.append(currentOrientation, self.ic.mid1Uss/2.0)
+        currentOrientation = np.append(currentOrientation, self.ic.mid2Uss/2.0)
+        currentOrientation = np.append(currentOrientation, self.ic.rearUss/2.0)
 
         #print("currentOrientation" + str(currentOrientation))
         robotGroundMap = np.asarray(robotGroundMap, dtype=np.float32  )
@@ -138,7 +140,7 @@ class robotEnv():
 
         # replace nan values with 0
         robotGroundMap.reshape(1,28,28)
-        currentOrientation.reshape(1,7)
+        currentOrientation.reshape(1,9)
 
         return robotGroundMap, currentOrientation
 
@@ -258,9 +260,9 @@ class robotEnv():
         #if (mean_delta_vel <= 1e-2 and self.number!=1):
        # if(self.number == 1):
         #    mean_delta_vel = 1
-        #if (mean_delta_vel <= 1e-2):
-           # reward = -0.5
-            #EndEpisode = True
+        if (mean_delta_vel <= 1e-2):
+            reward = -0.5
+            EndEpisode = True
 
         if currentdistance <= self.deltaDist:
             reward = 0.5 +  (self.startGoalDistance*10 / self.stepCounter)

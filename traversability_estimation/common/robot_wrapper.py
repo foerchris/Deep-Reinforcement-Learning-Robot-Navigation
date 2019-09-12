@@ -56,7 +56,7 @@ class image_converter():
 
     def setAction(self, action):
 
-        action[0] += 1
+        action[0] += 1.0
         action[0] = action[0] / 2
         if(action[0] >= 1.0):
             action[0] = 1.0
@@ -121,30 +121,19 @@ class image_converter():
             cv_image = self.bridge2.imgmsg_to_cv2(map_data)
         except CvBridgeError as e:
             print(e)
+
         #print(cv_image.shape)
-        image = cv_image[:,:,0]
-        alpha = cv_image[:,:,1]
-        map = np.stack((cv2.resize(image, (200, 200)),cv2.resize(alpha, (200, 200))))
+        #image = cv_image[:,:,0]
+        #alpha = cv_image[:,:,1]
+
+        #map = np.stack((cv2.resize(image, (200, 200)),cv2.resize(alpha, (200, 200))))
         #print(map.shape)
 
-        if(self.number== 10):
-            red = cv_image[:,:,2]
-            green = cv_image[:,:,1]
-            image = cv_image[:,:,0]
-            alpha = cv_image[:,:,3]
+        #if(self.number== 2):
+         #   plt.imshow(cv_image,cmap="gray")
+          #  plt.show()
 
-            plt.imshow(cv_image,cmap="gray")
-            plt.show()
-            plt.imshow(cv_image[:,:,0],cmap="gray")
-            plt.show()
-            plt.imshow(cv_image[:,:,1],cmap="gray")
-            plt.show()
-            plt.imshow(cv_image[:,:,2],cmap="gray")
-            plt.show()
-            plt.imshow(cv_image[:,:,3],cmap="gray")
-            plt.show()
-
-        self.eleviationImage = map
+        self.eleviationImage = cv2.resize(cv_image, (200, 200))
 
 
 
