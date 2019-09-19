@@ -47,12 +47,12 @@ class robotEnv():
         self.episodeFinished = False
         # Variables to calculate the reward
         self.deltaDist = 0.20
-        self.discountFactorMue = 0.1
+        self.discountFactorMue = 0.05
         self.closestDistance = 0
         self.startGoalDistance = 0
         self.lastDistance = 0
         self.startTime =0
-        self.delta_vel_memory = Memory(25)
+        self.delta_vel_memory = Memory(10)
 
         self.lastTime = 0
         self.angl_acc = 0
@@ -75,8 +75,10 @@ class robotEnv():
 
         html = '<html><body><p>Hi, Your programm has stop pleas start it again!</p></body></html>'
         part2 = MIMEText(html, 'html')
-
+        self.currentRobotSpeed = rospy.get_param("/GETjag"+ str(self.number) + "/current_robot_speed")
         self.msg.attach(part2)
+        self.stepCounter =0
+
 
     def set_episode_length(self,EpisodeLength):
         self.EpisodeLength = EpisodeLength
@@ -152,10 +154,10 @@ class robotEnv():
         self.ic.stop()
         valiedEnv = False
         self.delta_vel_memory.resetBuffer()
-
+        self.ic.flipperVelFront = 0
+        self.ic.flipperVelRear = 0
         # resest the step counter
         self.stepCounter=0
-
 
         # repead until the robot is in a valite starting position
         count_valied_state = 0
@@ -207,6 +209,7 @@ class robotEnv():
         self.ic.acceleration_to_high = 0
         self.ic.robot_flip_over = False
         self.ic.biggestangularAccelz =0
+
         return self.get_state()
 
 
@@ -223,6 +226,9 @@ class robotEnv():
         currentTime = currentTime - self.startTime
         deltaTime = currentTime - self.lastTime
 
+        if (self.stepCounter == 1):
+            self.closestDistance = currentdistance
+            self.currentRobotSpeed = rospy.get_param("/GETjag"+ str(self.number) + "/current_robot_speed")
 
         EndEpisode = False;
         reward=0
@@ -239,18 +245,21 @@ class robotEnv():
         self.angl_acc = 0
 
         if (self.ic.acceleration_to_high != 0):
-            print(str(self.number) + "acceleration_to_high")
-            print("accel z:" + str(self.ic.accelZ))
+            #print(str(self.number) + "acceleration_to_high")
+            #print("accel z:" + str(self.ic.accelZ))
             self.angl_acc = self.ic.acceleration_to_high
-            reward = -self.ic.acceleration_to_high/1000
+            reward = -self.ic.acceleration_to_high/500
+            #reward = -0.5
             #EndEpisode = True
-            print(str(self.number) + "reward: " + str(reward))
+            #print(str(self.number) + "reward: " + str(reward))
 
             self.ic.acceleration_to_high = 0
 
 
         if(self.ic.robot_flip_over):
             reward = -1
+            print("robot_flip_over")
+
             EndEpisode = True
             self.ic.robot_flip_over = False
 
@@ -258,12 +267,18 @@ class robotEnv():
         #if (mean_delta_vel <= 1e-2 and self.number!=1):
        # if(self.number == 1):
         #    mean_delta_vel = 1
-        #if (mean_delta_vel <= 1e-2):
-           # reward = -0.5
-            #EndEpisode = True
+        if (mean_delta_vel <= 1e-2):
+            print("robot_stucked")
+            reward = -0.5
+            EndEpisode = True
 
         if currentdistance <= self.deltaDist:
-            reward = 0.5 +  (self.startGoalDistance*10 / self.stepCounter)
+            print(self.currentRobotSpeed)
+            print(self.startGoalDistance)
+            print(float(self.stepCounter))
+
+            #reward = 0.5 +  float((float(20*5.0/self.currentRobotSpeed) / float(self.stepCounter)))
+            reward = 1
             print("reached Goal")
             EndEpisode = True
 
@@ -276,6 +291,11 @@ class robotEnv():
         self.episodeFinished = EndEpisode
         reward = np.float32(reward)
 
+
+        if(EndEpisode == True):
+            if(reward >= 0.5):
+                print("reached Goal, agent" + str(self.number) +  ", " + "reward: " + str(reward) + ", steps:" + str(self.stepCounter))
+            print("total_reward: " + str(self.total_reward+ reward))
 
 
         return reward, EndEpisode

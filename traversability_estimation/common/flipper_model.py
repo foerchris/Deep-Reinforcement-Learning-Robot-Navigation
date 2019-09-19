@@ -108,9 +108,10 @@ class FeatureNetwork(nn.Module):
 
         orientation = orientation.view(-1, map.shape[1], map.shape[2], map.shape[3])
 
-        map_and_orientation = map.add(orientation)
+        #map_and_orientation = map.add(orientation)
 
-        map_orientation_out = self.cnn_map_orientation(map_and_orientation)
+        #map_orientation_out = self.cnn_map_orientation(map_and_orientation)
+        map_orientation_out = self.cnn_map_orientation(map)
 
 
         map_orientation_out = map_orientation_out.view(1, map_state.shape[0], -1)
@@ -134,19 +135,19 @@ class ActorCritic(nn.Module):
         super(ActorCritic, self).__init__()
 
         self.critic = nn.Sequential(
-            nn.Linear(hidden_size, hidden_size),
+            nn.Linear(hidden_size, hidden_size/2),
             nn.ReLU(),
-            nn.Linear(hidden_size, hidden_size),
+            nn.Linear(hidden_size/2, hidden_size/2),
             nn.ReLU(),
-            nn.Linear(hidden_size, 1)
+            nn.Linear(hidden_size/2, 1)
         )
 
         self.actor = nn.Sequential(
-            nn.Linear(hidden_size, hidden_size),
+            nn.Linear(hidden_size, hidden_size/2),
             nn.ReLU(),
-            nn.Linear(hidden_size, hidden_size),
+            nn.Linear(hidden_size/2, hidden_size/2),
             nn.ReLU(),
-            nn.Linear(hidden_size, num_outputs),
+            nn.Linear(hidden_size/2, num_outputs),
             nn.Tanh()
         )
         self.log_std = nn.Parameter(torch.ones(1, num_outputs) * std)

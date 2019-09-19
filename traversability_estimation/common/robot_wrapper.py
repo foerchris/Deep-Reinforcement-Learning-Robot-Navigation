@@ -46,7 +46,7 @@ class image_converter():
         self.countPub = 0
         self.robotAction = 7
         self.main()
-        self.deltaDist = 0.4
+        self.deltaDist = 1
         self.reach_the_goal = False
 
 

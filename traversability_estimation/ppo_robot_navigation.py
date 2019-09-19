@@ -39,8 +39,8 @@ from agents import Agent
 
 MODELPATH = os.path.join(dirname, 'train_getjag/ppo/Model')
 
-load_model = True
-last_number_of_frames = 24000
+load_model = False
+last_number_of_frames = 0
 
 frame_idx  = 0 + last_number_of_frames
 num_envs_possible = 16;
@@ -145,16 +145,16 @@ def plot(frame_idx, rewards):
 
 
 #Hyper params:
-hidden_size      = 576*2
-lstm_layers      = 3
+hidden_size      = 585 #576*2
+lstm_layers      = 1
 lr               = 1e-3
 lr_decay_epoch   = 100.0
 init_lr          = lr
 epoch            = 0.0
 
-max_num_steps    = 1000
-num_steps        = 1500
-mini_batch_size  = 150
+max_num_steps    = 300
+num_steps        = 2000
+mini_batch_size  = 200
 ppo_epochs       = 6
 max_grad_norm    = 0.5
 GAMMA            = 0.99
@@ -192,7 +192,7 @@ f.write("\n Architecture: 1")
 
 f.close()
 
-agent = Agent(state_size_map, state_size_depth , state_size_goal, num_outputs, hidden_size, stack_size, load_model, MODELPATH, lr, mini_batch_size, num_envs, lr_decay_epoch, init_lr, eta)
+agent = Agent(state_size_map, state_size_depth , state_size_goal, num_outputs, hidden_size, stack_size, lstm_layers,load_model, MODELPATH, lr, mini_batch_size, num_envs, lr_decay_epoch, init_lr, eta)
 max_frames = 500000
 test_rewards = []
 

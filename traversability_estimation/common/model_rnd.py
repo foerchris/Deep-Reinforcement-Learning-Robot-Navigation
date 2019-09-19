@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 
 
 class FeatureNetwork(nn.Module):
-    def __init__(self,state_size_map, state_size_depth , state_size_goal, hidden_size, stack_size,lstm_layers, std=0.0):
+    def __init__(self,state_size_map, state_size_depth , state_size_goal, hidden_size, stack_size, lstm_layers, std=0.0):
         self.state_size_map = state_size_map
         self.state_size_depth = state_size_depth
         self.state_size_goal = state_size_goal
@@ -100,11 +100,13 @@ class FeatureNetwork(nn.Module):
                     init.constant_(p, 0)
         elif isinstance(m, nn.LSTMCell):
 
+
             for name, p in self.named_parameters():
                 if 'weight' in name:
                     init.orthogonal_(p)
                 elif 'bias' in name:
                     init.constant_(p, 0)
+
 
     def init_hidden(self, batch_size):
         # Before we've done anything, we dont have any hidden state.
@@ -118,37 +120,68 @@ class FeatureNetwork(nn.Module):
 
         self.hidden = (hidden_h, hidden_c)
 
-
+       # plt.imshow(map_state[0][0].cpu().numpy() ,cmap="gray")
+        #plt.show()
+        #map_state= map_state.view(-1,map_state.shape[2], map_state.shape[3], map_state.shape[4])
+        #plt.imshow(map_state[0][0].cpu().numpy(),cmap="gray")
+        #plt.show()
+        #plt.imshow(map_state[0][1].cpu().numpy(),cmap="gray")
+        #plt.show()
         map = self.cnn_map(map_state)
+        # print("goal_state"+str(goal_state))
+        # print("goal_state[0][0]"+str(goal_state[0][0]))
+        #
+        # orientation = goal_state[0][0].cpu().numpy()
+        # position = orientation[:3]
+        # print("position"+str(position))
+        #
+        # orientation = orientation[3:]
+        # print("orientation"+str(orientation))
+        # position = np.multiply(position,10)
+        # print("position"+str(position))
+        #
+        # bla = np.multiply(orientation,math.pi)
+        # print("orientation_state"+str(bla/math.pi*180.0))
+        # plt.imshow(map_state[0][0].cpu().numpy(),cmap="gray")
+        # plt.show()
+        #robotGroundMap =  np.multiply(map_state[0][0].cpu().numpy(), 2e8) #255
 
 
         goal_state = goal_state.view(-1, goal_state.shape[1]* goal_state.shape[2])
 
-       # goal = self.cnn_goal(goal_state)
+        goal = self.cnn_goal(goal_state)
 
-      #  goal = goal.view(-1, map.shape[1], map.shape[2], map.shape[3])
+        goal = goal.view(-1, map.shape[1], map.shape[2], map.shape[3])
 
 
-#        map_and_goal = map.add(goal)
+        map_and_goal = map.add(goal)
 
-        map_goal_out = self.cnn_map_goal(map)
+        map_goal_out = self.cnn_map_goal(map_and_goal)
 
         map_goal_out = map_goal_out.view(-1, map_goal_out.shape[1] * map_goal_out.shape[2] * map_goal_out.shape[3])
 
 
-        #depth_out = self.cnn_depth(depth_state)
+        #plt.imshow(depth_state[0][0].cpu().numpy() ,cmap="gray")
+        #plt.show()
+        #plt.imshow(depth_state[0][1].cpu().numpy() ,cmap="gray")
+        #plt.show()
 
-        #depth_out = depth_out.view(-1, depth_out.shape[1] * depth_out.shape[2] * depth_out.shape[3])
+        depth_out = self.cnn_depth(depth_state)
 
-      #  map_goal_depth = torch.cat((map_goal_out, depth_out), 1)
-        map_goal_depth = torch.cat((map_goal_out, goal_state), 1)
+        #print('depth_out.shape' + str(depth_out.shape))
+        #plt.imshow(depth_out[0][0].cpu().numpy() ,cmap="gray")
+        #plt.show()
+        depth_out = depth_out.view(-1, depth_out.shape[1] * depth_out.shape[2] * depth_out.shape[3])
 
+        map_goal_depth = torch.cat((map_goal_out, depth_out), 1)
 
         map_goal_depth = map_goal_depth.view(1, -1, map_goal_depth.shape[1])
 
         lstm_out, self.hidden = self.lstm(map_goal_depth, self.hidden)
 
+       # print("lstm_out.shape" + str(lstm_out.shape))
         lstm_out = lstm_out.view(-1, lstm_out.shape[2])
+       # print("lstm_out.shape" + str(lstm_out.shape))
 
         hidden_h = self.hidden[0]
         hidden_c = self.hidden[1]
@@ -170,12 +203,12 @@ class ActorCritic(nn.Module):
             nn.Linear(hidden_size, hidden_size),
             #nn.Tanh(),
             nn.ReLU(),
-           # nn.Linear(hidden_size, hidden_size),
+            nn.Linear(hidden_size, hidden_size),
             #nn.Tanh(),
-           # nn.ReLU(),
-          #  nn.Linear(hidden_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
             #nn.Tanh(),
-         #   nn.ReLU(),
+            nn.ReLU(),
             nn.Linear(hidden_size, 1)
         )
 
@@ -183,12 +216,12 @@ class ActorCritic(nn.Module):
             nn.Linear(hidden_size, hidden_size),
             #nn.Tanh(),
             nn.ReLU(),
-           # nn.Linear(hidden_size, hidden_size),
+            nn.Linear(hidden_size, hidden_size),
             #nn.Tanh(),
-            #nn.ReLU(),
-        #    nn.Linear(hidden_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
             #nn.Tanh(),
-       #     nn.ReLU(),
+            nn.ReLU(),
             nn.Linear(hidden_size, num_outputs),
             nn.Tanh()
         )
@@ -198,11 +231,13 @@ class ActorCritic(nn.Module):
         if isinstance(m, nn.Linear):
             #nn.init.normal_(m.weight, mean=0., std=0.05)
             torch.nn.init.orthogonal_(m.weight.data)
+            #torch.nn.init.orthogonal_(m.weight, np.sqrt(2))
             #nn.init.constant_(m.bias, 0.0)
             if m.bias is not None:
                 torch.nn.init.zeros_(m.bias)
         elif isinstance(m, nn.Conv2d):
             torch.nn.init.xavier_uniform_(m.weight)
+            #torch.nn.init.orthogonal_(m.weight, np.sqrt(2))
             #torch.nn.init.orthogonal_(m.weight.data)
             if m.bias is not None:
                 torch.nn.init.zeros_(m.bias)
@@ -240,113 +275,78 @@ class ActorCritic(nn.Module):
 
         return dist, value, std
 
-class ICMModel(nn.Module):
-    def __init__(self, num_outputs, hidden_size, std=0.0):
+class RNDModel(nn.Module):
+    def __init__(self, input_size, output_size):
+        super(RNDModel, self).__init__()
 
-        self.hidden_dim = hidden_size
-        use_cuda = torch.cuda.is_available()
-        self.device   = torch.device("cuda" if use_cuda else "cpu")
-        torch.cuda.empty_cache()
+        self.input_size = input_size
+        self.output_size = output_size
 
-        super(ICMModel, self).__init__()
-
-        self.inverse_net = nn.Sequential(
-            nn.Linear(hidden_size*2, hidden_size),
-            nn.ReLU(),
-          #   nn.Linear(hidden_size, hidden_size),
-            #nn.Tanh(),
-         #   nn.ReLU(),
-          #  nn.Linear(hidden_size, hidden_size),
-            #nn.Tanh(),
-         #   nn.ReLU(),
-            nn.Linear(hidden_size, num_outputs),
-            nn.Tanh()
-        )
-
-        self.residual = [nn.Sequential(
-            nn.Linear(num_outputs + hidden_size, hidden_size),
+        feature_output = 7 * 7 * 64
+        self.predictor = nn.Sequential(
+            nn.Conv2d(
+                in_channels=1,
+                out_channels=32,
+                kernel_size=8,
+                stride=4),
             nn.LeakyReLU(),
-            nn.Linear(hidden_size, hidden_size),
-        ).to(self.device)]* 8
-
-        self.forward_net_1 = nn.Sequential(
-            nn.Linear(num_outputs + hidden_size, hidden_size),
-            nn.LeakyReLU()
-        )
-        self.forward_net_2 = nn.Sequential(
-            nn.Linear(num_outputs + hidden_size, hidden_size),
-        )
-
-        self.forward_model = nn.Sequential(
-            nn.Linear(hidden_size + num_outputs, hidden_size),
+            nn.Conv2d(
+                in_channels=32,
+                out_channels=64,
+                kernel_size=4,
+                stride=2),
+            nn.LeakyReLU(),
+            nn.Conv2d(
+                in_channels=64,
+                out_channels=64,
+                kernel_size=3,
+                stride=1),
+            nn.LeakyReLU(),
+            Flatten(),
+            nn.Linear(feature_output, 512),
             nn.ReLU(),
-            nn.Linear(hidden_size, hidden_size))
+            nn.Linear(512, 512),
+            nn.ReLU(),
+            nn.Linear(512, 512)
+        )
 
-#         for p in self.modules():
-#             if isinstance(p, nn.Conv2d):
-#                 init.kaiming_uniform_(p.weight)
-#                 p.bias.data.zero_()
-#
-#             if isinstance(p, nn.Linear):
-#                 init.kaiming_uniform_(p.weight, a=1.0)
-#                 p.bias.data.zero_()
+        self.target = nn.Sequential(
+            nn.Conv2d(
+                in_channels=1,
+                out_channels=32,
+                kernel_size=8,
+                stride=4),
+            nn.LeakyReLU(),
+            nn.Conv2d(
+                in_channels=32,
+                out_channels=64,
+                kernel_size=4,
+                stride=2),
+            nn.LeakyReLU(),
+            nn.Conv2d(
+                in_channels=64,
+                out_channels=64,
+                kernel_size=3,
+                stride=1),
+            nn.LeakyReLU(),
+            Flatten(),
+            nn.Linear(feature_output, 512)
+        )
 
-    def init_weights(self,m):
-        if isinstance(m, nn.Linear):
-            #nn.init.normal_(m.weight, mean=0., std=0.05)
-            torch.nn.init.orthogonal_(m.weight.data)
-            #nn.init.constant_(m.bias, 0.0)
-            if m.bias is not None:
-                torch.nn.init.zeros_(m.bias)
-        elif isinstance(m, nn.Conv2d):
-            torch.nn.init.xavier_uniform_(m.weight)
-            #torch.nn.init.orthogonal_(m.weight.data)
-            if m.bias is not None:
-                torch.nn.init.zeros_(m.bias)
-        elif isinstance(m, nn.LSTM):
-            for param in m.parameters():
-                if len(param.shape) >= 2:
-                    torch.nn.init.orthogonal_(param.data)
-                else:
-                    torch.nn.init.normal_(param.data)
-        elif isinstance(m, nn.LSTMCell):
-            for param in m.parameters():
-                if len(param.shape) >= 2:
-                    torch.nn.init.orthogonal_(param.data)
-                else:
-                    torch.nn.init.normal_(param.data)
+        for p in self.modules():
+            if isinstance(p, nn.Conv2d):
+                init.orthogonal_(p.weight, np.sqrt(2))
+                p.bias.data.zero_()
 
+            if isinstance(p, nn.Linear):
+                init.orthogonal_(p.weight, np.sqrt(2))
+                p.bias.data.zero_()
 
-    def init_hidden(self, batch_size):
-        # Before we've done anything, we dont have any hidden state.
-        # Refer to the Pytorch documentation to see exactly
-        # why they have this dimensionality.
-        # The axes semantics are (num_layers, minibatch_size, hidden_dim)
-        return (torch.zeros(1, batch_size, self.hidden_dim, device=self.device),
-                torch.zeros(1, batch_size, self.hidden_dim, device=self.device))
+        for param in self.target.parameters():
+            param.requires_grad = False
 
-    def forward(self, lstm_out, next_lstm_out, action):
+    def forward(self, next_obs):
+        target_feature = self.target(next_obs)
+        predict_feature = self.predictor(next_obs)
 
-        encode_state = lstm_out
-        encode_next_state = next_lstm_out
-
-        # get pred action
-        pred_action = torch.cat((lstm_out, next_lstm_out), 1)
-        pred_action = self.inverse_net(pred_action)
-        # ---------------------
-        # get pred next state
-        #pred_next_state_feature_orig = torch.cat((lstm_out, action), 1)
-
-       # pred_next_state_feature_orig = self.forward_net_1(pred_next_state_feature_orig)
-
-        # residual
-       # for i in range(4):
-        #    pred_next_state_feature = torch.cat((pred_next_state_feature_orig, action), 1)
-         #   pred_next_state_feature = self.residual[i * 2](pred_next_state_feature)
-          #  pred_next_state_feature_orig = self.residual[i * 2 + 1](torch.cat((pred_next_state_feature, action), 1)) + pred_next_state_feature_orig
-
-
-        #pred_next_state_feature = self.forward_net_2(torch.cat((pred_next_state_feature_orig, action), 1))
-        pred_next_state_feature = self.forward_net_2(torch.cat((lstm_out, action), 1))
-
-        return pred_next_state_feature, pred_action
+        return predict_feature, target_feature

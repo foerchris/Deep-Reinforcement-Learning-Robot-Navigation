@@ -1,5 +1,7 @@
 eclipse.preferences.version=1
 encoding//common/agents.py=utf-8
+encoding//common/agents_icm.py=utf-8
+encoding//common/agents_rnd.py=utf-8
 encoding//common/flipper_agents.py=utf-8
 encoding//common/flipper_agents_nomap.py=utf-8
 encoding//common/flipper_model.py=utf-8
@@ -7,6 +9,7 @@ encoding//common/flipper_model2.py=utf-8
 encoding//common/model.py=utf-8
 encoding//common/model_icm.py=utf-8
 encoding//common/model_old.py=utf-8
+encoding//common/model_rnd.py=utf-8
 encoding//common/robot_env.py=utf-8
 encoding//common/robot_env_flipper.py=utf-8
 encoding//common/robot_env_flipper_nomap.py=utf-8

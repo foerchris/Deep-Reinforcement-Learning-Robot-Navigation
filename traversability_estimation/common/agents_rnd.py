@@ -101,6 +101,17 @@ class Agent():
                 hidden_state_c = hidden_state_c.view(self.lstm_layers, -1, hidden_state_c.shape[2])
 
 
+                # --------------------------------------------------------------------------------
+                # for Curiosity-driven(Random Network Distillation)
+                predict_next_state_feature, target_next_state_feature = self.rnd(next_obs_batch[sample_idx])
+
+                forward_loss = forward_mse(predict_next_state_feature, target_next_state_feature.detach()).mean(-1)
+                # Proportion of exp used for predictor update
+                mask = torch.rand(len(forward_loss)).to(self.device)
+                mask = (mask < self.update_proportion).type(torch.FloatTensor).to(self.device)
+                forward_loss = (forward_loss * mask).sum() / torch.max(mask.sum(), torch.Tensor([1]).to(self.device))
+
+
                 features, _, _ = self.feature_net(map_state, depth_state, goal_state, hidden_state_h, hidden_state_c)
                 dist, value, _ = self.ac_model(features)
 

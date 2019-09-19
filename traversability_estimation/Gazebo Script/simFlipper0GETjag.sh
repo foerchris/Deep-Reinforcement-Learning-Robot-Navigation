@@ -26,7 +26,7 @@ WORKERNUMBER="0"
 NUMBEROFWORKERS="4"
 namespace="GETjag"
 tf_prefix="GETjag"
-world="DrlFlipper5RobotsV1.world"
+world="DrlFlipper5Robots.world"
 simulator="false"
 startdrlagent="false"
 drlagentStartet="false"
@@ -70,8 +70,6 @@ do
 	rosparam set "/GETjag$i/Error_in_simulator" false
 	rosparam set "/GETjag$i/Ready_to_Start_DRL_Agent" false
 	rosparam set "/GETjag$i/worker_ready" True
-	rosparam set "/GETjag$i/current_robot_speed" 0.5
-
 	i=$((i+1))
 done
 
@@ -82,7 +80,7 @@ do
 	CANEXIT=0
 	#reset watchdog
 	echo -e "[$(date +"%T")]: ${GREEN}Starting gazebo with world: ${NC}$world"
-	roslaunch get_gazebo_worlds getjagFlipper5.launch world:=$world gui:=$simulator > output_gazebo.txt 2>&1 &
+	roslaunch get_gazebo_worlds getjag0.launch world:=$world gui:=$simulator > output_gazebo.txt 2>&1 &
 	PIDs+=($!)
 	sleep 10
 	STARTTIME=$(date +%s.%N)

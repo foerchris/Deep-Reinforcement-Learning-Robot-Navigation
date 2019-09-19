@@ -34,12 +34,12 @@ def elevImageCallback(map_data):
     except CvBridgeError as e:
         print(e)
     # print(cv_image.shape)
-    #image = cv_image[:, :, 0]
+    image = cv_image[:, :, 0]
 
     #alpha = cv_image[:, :, 1]
 
 
-    plt.imshow(cv_image, cmap="gray")
+    plt.imshow(image, cmap="gray")
     plt.show()
     #plt.imshow(alpha, cmap="gray")
     #plt.show()

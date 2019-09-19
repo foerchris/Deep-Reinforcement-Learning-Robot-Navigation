@@ -66,8 +66,8 @@ class image_converter():
         self.last_time = time.time()
 
     def stop(self):
-        self.flipperVelFront = 0
-        self.flipperVelRear = 0
+        self.flipperVelFront = self.flipperVelFront
+        self.flipperVelRear = self.flipperVelRear
 
     def setAction(self, action):
         bound = 1.22
@@ -76,19 +76,19 @@ class image_converter():
         rearPose = self.flipperPoseRear.current_pos
 
 
-        if(frontPose >= bound and action[0]>0):
-            action[0] = -action[0]
-        elif(frontPose <= -bound and action[0]<0):
-            action[0] = -action[0]
+       # if(frontPose >= bound and action[0]>0):
+       #     action[0] = -action[0]
+       # elif(frontPose <= -bound and action[0]<0):
+       #     action[0] = -action[0]
 
-        if (rearPose >= bound and action[1]>0):
-            action[1] = -action[1]
-        elif (rearPose <= -bound and action[1]<0):
-            action[1] = -action[1]
+       # if (rearPose >= bound and action[1]>0):
+       #     action[1] = -action[1]
+       # elif (rearPose <= -bound and action[1]<0):
+       #     action[1] = -action[1]
 
 
-        self.flipperVelFront = action[0]
-        self.flipperVelRear = action[1]
+        self.flipperVelFront = action[0]*(math.pi/2)
+        self.flipperVelRear = action[1]*(math.pi/2)
 
 
     def frontUSS_Callback(self, uss_data):
@@ -233,8 +233,13 @@ class image_converter():
         rospy.init_node('GETjag_'+ str(self.number) +'_drl_gaz_robot_env_wrapper_worker')
 
         self.startStopRobotPub = rospy.Publisher("/GETjag" + str(self.number) + "/start_stop_robot", Bool, queue_size=10)
-        self.robotFlipperFrontPub = rospy.Publisher("/GETjag" + str(self.number) + "/flipper_front_controller/cmd_vel", Float64, queue_size=10)
-        self.robotFlipperRearPub = rospy.Publisher("/GETjag" + str(self.number) + "/flipper_rear_controller/cmd_vel", Float64, queue_size=10)
+        #self.robotFlipperFrontPub = rospy.Publisher("/GETjag" + str(self.number) + "/flipper_front_controller/cmd_vel", Float64, queue_size=10)
+        #self.robotFlipperRearPub = rospy.Publisher("/GETjag" + str(self.number) + "/flipper_rear_controller/cmd_vel", Float64, queue_size=10)
+
+
+        self.robotFlipperFrontPub = rospy.Publisher("GETjag" + str(self.number) + "/flipper_front_controller/command", Float64, queue_size=10)
+        self.robotFlipperRearPub = rospy.Publisher("GETjag" + str(self.number) + "/flipper_rear_controller/command", Float64, queue_size=10)
+
 
         self.robotPoseSub = rospy.Subscriber("GETjag" + str(self.number) + "/odom", Odometry, self.robotCallback)
         self.flipperFrontPoseSub = rospy.Subscriber("GETjag" + str(self.number) + "/flipper_front_controller/state", JointState, self.flipperFrontPose)
