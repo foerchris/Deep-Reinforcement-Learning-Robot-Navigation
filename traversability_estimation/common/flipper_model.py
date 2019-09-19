@@ -35,24 +35,30 @@ class FeatureNetwork(nn.Module):
 
         #This is the ElevMap part
         self.cnn_map = nn.Sequential(
-            nn.Conv2d(in_channels=stack_size, out_channels=32, kernel_size=5, stride=1, padding=0),
+            nn.Conv2d(in_channels=stack_size, out_channels=32, kernel_size=4, stride=1, padding=0),
             nn.ReLU(),
-            nn.MaxPool2d(2,stride=2),
+            nn.MaxPool2d(2,stride=1),
+            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.MaxPool2d(2,stride=1),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.MaxPool2d(2,stride=2)
         )
 
         # This is the orientation pose part
         self.cnn_orientation = nn.Sequential(
-            nn.Linear(state_size_orientation, 4608),
+            nn.Linear(state_size_orientation, 5184),
             nn.ReLU()
         )
 
         self.cnn_map_orientation = nn.Sequential(
-            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=1, padding=0),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=4, stride=1, padding=0),
             nn.ReLU(),
             nn.MaxPool2d(2, stride=2)
         )
 
-        self.lstm = nn.LSTM(hidden_size*2, hidden_size, num_layers=1)
+        self.lstm = nn.LSTM(hidden_size, hidden_size, num_layers=1)
 
         #self.hidden = self.init_hidden()
     def init_weights(self,m):
@@ -68,17 +74,17 @@ class FeatureNetwork(nn.Module):
             if m.bias is not None:
                 torch.nn.init.zeros_(m.bias)
         elif isinstance(m, nn.LSTM):
-            for name, p in self.named_parameters():
-                if 'weight' in name:
-                    init.orthogonal_(p)
-                elif 'bias' in name:
-                    init.constant_(p, 0)
+            for param in m.parameters():
+                if len(param.shape) >= 2:
+                    torch.nn.init.orthogonal_(param.data)
+                else:
+                    torch.nn.init.normal_(param.data)
         elif isinstance(m, nn.LSTMCell):
-            for name, p in self.named_parameters():
-                if 'weight' in name:
-                    init.orthogonal_(p)
-                elif 'bias' in name:
-                    init.constant_(p, 0)
+            for param in m.parameters():
+                if len(param.shape) >= 2:
+                    torch.nn.init.orthogonal_(param.data)
+                else:
+                    torch.nn.init.normal_(param.data)
 
     def init_hidden(self, batch_size):
         # Before we've done anything, we dont have any hidden state.
@@ -92,14 +98,15 @@ class FeatureNetwork(nn.Module):
 
         self.hidden = (hidden_h, hidden_c)
 
-        #plt.imshow(map_state[0][0].cpu().numpy(),cmap="gray")
-        #plt.show()
+       # plt.imshow(map_state[0][0].cpu().numpy(),cmap="gray")
+       # plt.show()
         #robotGroundMap =  np.multiply(map_state[0][0].cpu().numpy(), 2e8) #255
-        #bla = np.multiply(orientation_state[0][0],math.pi)
-        #print("orientation_state"+str(bla/math.pi*180.0))
+
         #cv2.imshow('image',robotGroundMap)
         #cv2.waitKey(2)
+       # print("map_state.shape" + str(map_state.shape))
         map = self.cnn_map(map_state)
+        #print("map.shape" + str(map.shape))
 
         #print("orientation_state" + str(orientation_state))
         orientation_state = orientation_state.view(-1, orientation_state.shape[1]* orientation_state.shape[2])
@@ -108,7 +115,7 @@ class FeatureNetwork(nn.Module):
 
         orientation = orientation.view(-1, map.shape[1], map.shape[2], map.shape[3])
 
-        #map_and_orientation = map.add(orientation)
+          #map_and_orientation = map.add(orientation)
 
         #map_orientation_out = self.cnn_map_orientation(map_and_orientation)
         map_orientation_out = self.cnn_map_orientation(map)
@@ -121,10 +128,12 @@ class FeatureNetwork(nn.Module):
 
         lstm_out = lstm_out.view(-1, lstm_out.shape[2])
 
+        map_orientation_out = map_orientation_out.view(-1, map_orientation_out.shape[2])
+
         hidden_h = self.hidden[0]
         hidden_c = self.hidden[1]
 
-        return lstm_out, hidden_h.detach(), hidden_c.detach()
+        return map_orientation_out, hidden_h.detach(), hidden_c.detach()
 
 class ActorCritic(nn.Module):
     def __init__(self, num_outputs,hidden_size, std=0.0):
