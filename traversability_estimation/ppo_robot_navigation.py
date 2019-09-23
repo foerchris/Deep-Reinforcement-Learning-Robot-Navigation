@@ -145,17 +145,17 @@ def plot(frame_idx, rewards):
 
 
 #Hyper params:
-hidden_size      = 585 #576*2
-lstm_layers      = 1
+hidden_size      = 576 #576*2
+lstm_layers      = 2
 lr               = 1e-3
-lr_decay_epoch   = 100.0
+lr_decay_epoch   = 40.0
 init_lr          = lr
 epoch            = 0.0
 
 max_num_steps    = 300
 num_steps        = 2000
 mini_batch_size  = 200
-ppo_epochs       = 6
+ppo_epochs       = 8
 max_grad_norm    = 0.5
 GAMMA            = 0.99
 GAE_LAMBDA       = 0.95

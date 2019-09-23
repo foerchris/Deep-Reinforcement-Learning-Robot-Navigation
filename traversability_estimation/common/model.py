@@ -124,15 +124,15 @@ class FeatureNetwork(nn.Module):
 
         goal_state = goal_state.view(-1, goal_state.shape[1]* goal_state.shape[2])
 
-#        goal = self.cnn_goal(goal_state)
+        goal = self.cnn_goal(goal_state)
 
- #       goal = goal.view(-1, map.shape[1], map.shape[2], map.shape[3])
+        goal = goal.view(-1, map.shape[1], map.shape[2], map.shape[3])
 
 
-  #      map_and_goal = map.add(goal)
-    #    map_goal_out = self.cnn_map_goal(map_and_goal)
+        map_and_goal = map.add(goal)
+        map_goal_out = self.cnn_map_goal(map_and_goal)
 
-        map_goal_out = self.cnn_map_goal(map)
+#        map_goal_out = self.cnn_map_goal(map)
 
         map_goal_out = map_goal_out.view(-1, map_goal_out.shape[1] * map_goal_out.shape[2] * map_goal_out.shape[3])
 
@@ -141,9 +141,10 @@ class FeatureNetwork(nn.Module):
  #       depth_out = depth_out.view(-1, depth_out.shape[1] * depth_out.shape[2] * depth_out.shape[3])
 
      #   map_goal_depth = torch.cat((map_goal_out, depth_out), 1)
-        map_goal_depth = torch.cat((map_goal_out, goal_state), 1)
+       # map_goal_depth = torch.cat((map_goal_out, goal_state), 1)
 
-        map_goal_depth = map_goal_depth.view(1, -1, map_goal_depth.shape[1])
+   #     map_goal_depth = map_goal_depth.view(1, -1, map_goal_depth.shape[1])
+        map_goal_depth = map_goal_out.view(1, -1, map_goal_out.shape[1])
 
         lstm_out, self.hidden = self.lstm(map_goal_depth, self.hidden)
 
