@@ -39,7 +39,7 @@ from inspect import currentframe, getframeinfo
 
 MODELPATH = os.path.join(dirname, 'train_getjag/ppo_flipper/Model')
 
-load_model = False
+load_model = True
 last_number_of_frames = 0
 frame_idx  = 0 + last_number_of_frames
 num_envs_possible = 16;
@@ -198,7 +198,7 @@ for i in range(0, num_envs):
 envs.set_episode_length(episode_length)
 
 
-early_stop = False
+early_stop = True
 
 best_reach_goal = 0
 
@@ -447,6 +447,9 @@ total_std = []
 number_of_episodes = 0
 number_reached_goal = 0
 reach_goal = []
+flipp_over= []
+stucked = []
+
 entropy = 0
 total_angluar_acc = []
 
@@ -457,7 +460,7 @@ for i in range(0, num_envs):
 
 agent.feature_net.eval()
 agent.ac_model.eval()
-eval_steps = 6000 + frame_idx
+eval_steps = 10000 + frame_idx
 steps_idx = 0
 
 while frame_idx < eval_steps:
@@ -497,11 +500,30 @@ while frame_idx < eval_steps:
                 if (done[i] == True):
 
                     number_of_episodes += 1
-                    if (reward[i] >= 0.2):
+                 #   if (reward[i] >= 0.2):
+                  #      number_reached_goal += 1
+                  #      reach_goal.append(1)
+                  #  else:
+                  #      reach_goal.append(0)
+
+                    if (reward[i] == -1):
+                        flipp_over.append(1)
+                        stucked.append(0)
+                        reach_goal.append(0)
+                    elif (reward[i] == -0.5):
+                        stucked.append(1)
+                        flipp_over.append(0)
+                        reach_goal.append(0)
+                    elif (reward[i] >= 0.2):
                         number_reached_goal += 1
                         reach_goal.append(1)
+                        stucked.append(0)
+                        flipp_over.append(0)
                     else:
+                        stucked.append(0)
+                        flipp_over.append(0)
                         reach_goal.append(0)
+
 
                     _, stacked_map_frames = reset_single_frame(stacked_map_frames, next_map_state[i], stack_size, i)
                     _, stacked_orientation_frames = reset_single_frame(stacked_orientation_frames, next_orientation_state[i], stack_size, i)
@@ -546,6 +568,13 @@ total_std = []
 mean_reach_goal = np.mean(reach_goal)
 reach_goal = []
 
+mean_flipp_over = np.mean(flipp_over)
+flipp_over = []
+
+mean_stucked = np.mean(stucked)
+stucked = []
+
+
 test_rewards.append(mean_test_rewards)
 print("save tensorboard")
 # plot(frame_idx, test_rewards)
@@ -553,11 +582,16 @@ summary = tf.Summary()
 summary.value.add(tag='Mittelwert/Belohnungen', simple_value=float(mean_test_rewards))
 summary.value.add(tag='Mittelwert/Epsioden Länge', simple_value=float(mean_test_lenghts))
 summary.value.add(tag='Mittelwert/Std-Abweichung', simple_value=float(mean_total_std))
-summary.value.add(tag='Mittelwert/Ziel erreich', simple_value=float(mean_reach_goal))
+summary.value.add(tag='Mittelwert/Verähltniss Ziel erreich', simple_value=float(mean_reach_goal))
 summary.value.add(tag='Mittelwert/anzahl Episoden', simple_value=float(number_of_episodes))
 number_of_episodes = 0
 summary.value.add(tag='Mittelwert/anzahl Ziel erreicht', simple_value=float(number_reached_goal))
 number_reached_goal = 0
+
+summary.value.add(tag='Mittelwert/Verähltniss Umgekippt', simple_value=float(mean_flipp_over))
+
+summary.value.add(tag='Mittelwert/Verähltniss Stucked', simple_value=float(mean_stucked))
+
 
 summary.value.add(tag='Mittelwert/Mittelwert Winkelbeschleunigung', simple_value=float(np.mean(total_angluar_acc)))
 

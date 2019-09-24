@@ -52,7 +52,7 @@ class robotEnv():
         self.startGoalDistance = 0
         self.lastDistance = 0
         self.startTime =0
-        self.delta_vel_memory = Memory(10)
+        self.delta_vel_memory = Memory(30)
 
         self.lastTime = 0
         self.angl_acc = 0
