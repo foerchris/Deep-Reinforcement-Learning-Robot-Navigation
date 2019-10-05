@@ -48,7 +48,7 @@ class robotEnv():
         self.episodeFinished = False
         # Variables to calculate the reward
         self.deltaDist = 0.20
-        self.discountFactorMue = 0.1
+        self.discountFactorMue = 0.05
         self.closestDistance = 0
         self.startGoalDistance = 0
         self.lastDistance = 0
@@ -384,11 +384,13 @@ class robotEnv():
       #  if goalAreaReached:
         if self.ic.reach_the_goal:
             ##reward = 100
-            reward = 0.5 + (self.startGoalDistance * 20 / self.stepCounter)
+            #reward = 0.5 + (self.startGoalDistance * 5 / self.stepCounter)
+            reward = 1.0 #+ (self.startGoalDistance * 5 / self.stepCounter)
+
             print( float(self.stepCounter)/ float(self.EpisodeLength))
             #if(self.stepCounter==400):
              #   reward = 0.5
-            #else:
+           # else:
             #    reward = 0.5 + (1.0 - float(self.stepCounter)/ float(400))
 
             print("reached Goal, reward: " + str(reward) + ", stepCounter: " + str(self.stepCounter) + ", EpisodeLength: " + str(self.EpisodeLength))

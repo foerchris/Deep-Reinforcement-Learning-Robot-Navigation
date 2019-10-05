@@ -136,15 +136,15 @@ class FeatureNetwork(nn.Module):
 
         map_goal_out = map_goal_out.view(-1, map_goal_out.shape[1] * map_goal_out.shape[2] * map_goal_out.shape[3])
 
-#        depth_out = self.cnn_depth(depth_state)
+        depth_out = self.cnn_depth(depth_state)
 
- #       depth_out = depth_out.view(-1, depth_out.shape[1] * depth_out.shape[2] * depth_out.shape[3])
+        depth_out = depth_out.view(-1, depth_out.shape[1] * depth_out.shape[2] * depth_out.shape[3])
 
-     #   map_goal_depth = torch.cat((map_goal_out, depth_out), 1)
+        map_goal_depth = torch.cat((map_goal_out, depth_out), 1)
        # map_goal_depth = torch.cat((map_goal_out, goal_state), 1)
 
-   #     map_goal_depth = map_goal_depth.view(1, -1, map_goal_depth.shape[1])
-        map_goal_depth = map_goal_out.view(1, -1, map_goal_out.shape[1])
+        map_goal_depth = map_goal_depth.view(1, -1, map_goal_depth.shape[1])
+      #  map_goal_depth = map_goal_out.view(1, -1, map_goal_out.shape[1])
 
         lstm_out, self.hidden = self.lstm(map_goal_depth, self.hidden)
 
@@ -165,29 +165,29 @@ class ActorCritic(nn.Module):
         super(ActorCritic, self).__init__()
 
         self.critic = nn.Sequential(
-            nn.Linear(hidden_size, hidden_size/2),
+            nn.Linear(hidden_size, hidden_size),
             #nn.Tanh(),
             nn.ReLU(),
-            nn.Linear(hidden_size/2, hidden_size/2),
+          #  nn.Linear(hidden_size/2, hidden_size/2),
             #nn.Tanh(),
-            nn.ReLU(),
+         #   nn.ReLU(),
             #nn.Linear(hidden_size, hidden_size),
             #nn.Tanh(),
             #nn.ReLU(),
-            nn.Linear(hidden_size/2, 1)
+            nn.Linear(hidden_size, 1)
         )
 
         self.actor = nn.Sequential(
-            nn.Linear(hidden_size, hidden_size/2),
+            nn.Linear(hidden_size, hidden_size),
             #nn.Tanh(),
             nn.ReLU(),
-            nn.Linear(hidden_size/2, hidden_size/2),
+          #  nn.Linear(hidden_size/2, hidden_size/2),
             #nn.Tanh(),
-            nn.ReLU(),
+           # nn.ReLU(),
            # nn.Linear(hidden_size, hidden_size),
             #nn.Tanh(),
            # nn.ReLU(),
-            nn.Linear(hidden_size/2, num_outputs),
+            nn.Linear(hidden_size, num_outputs),
             nn.Tanh()
         )
         self.log_std = nn.Parameter(torch.ones(1, num_outputs) * std)
