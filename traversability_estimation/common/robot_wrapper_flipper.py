@@ -60,26 +60,44 @@ class image_converter():
         self.flipperVelFront = self.flipperPoseFront.current_pos
         self.flipperVelRear = self.flipperPoseRear.current_pos
 
+       # self.flipperVelFront =0
+       # self.flipperVelRear = 0
+
     def setAction(self, action):
         bound = 1.22
 
-        frontPose = self.flipperPoseFront.current_pos
-        rearPose = self.flipperPoseRear.current_pos
+       # frontPose = self.flipperPoseFront.current_pos
+       # rearPose = self.flipperPoseRear.current_pos
+
+        #if(self.number == 1):
+        #    print("action[0]" + str(action[0]))
+        #    print("action[1]" + str(action[1]))
+         #   print("frontPose" + str(frontPose))
+          #  print("rearPose" + str(rearPose))
 
 
-              # if(frontPose >= bound and action[0]>0):
-       #     action[0] = -action[0]
-       # elif(frontPose <= -bound and action[0]<0):
-       #     action[0] = -action[0]
-
-       # if (rearPose >= bound and action[1]>0):
-       #     action[1] = -action[1]
-       # elif (rearPose <= -bound and action[1]<0):
-       #     action[1] = -action[1]
+        #
+        # if(rearPose >= bound and action[0]>0):
+        #     action[0] = -abs(action[0])
+        # elif(rearPose  <= -bound and action[0]<0):
+        #     action[0] = abs(action[0])
+        #
+        # if (frontPose  >= bound and action[1]>0):
+        #     action[1] = -abs(action[1])
+        # elif (frontPose <= -bound and action[1]<0):
+        #     action[1] = abs(action[1])
+        #
+        # if(self.number == 1):
+        #     print("action[0]" + str(action[0]))
+        #     print("action[1]" + str(action[1]))
 
 
         self.flipperVelFront = action[0]*(math.pi/2)
         self.flipperVelRear = action[1]*(math.pi/2)
+
+        #self.flipperVelFront = action[0]
+        #self.flipperVelRear = action[1]
+
 
     # callback to get the current robot pose as position (x,y,z) and orientation as quaternion (x,y,z,w)
     # also transmits the robot action as velocities

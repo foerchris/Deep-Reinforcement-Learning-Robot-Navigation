@@ -16,7 +16,6 @@ from torch.distributions import Normal
 import tensorflow as tf
 from torch.nn import init
 import matplotlib.pyplot as plt
-from nipy.modalities.fmri.fmristat.tests.FIACdesigns import dtype
 import cv2
 from inspect import currentframe, getframeinfo
 
@@ -115,10 +114,10 @@ class FeatureNetwork(nn.Module):
 
         orientation = orientation.view(-1, map.shape[1], map.shape[2], map.shape[3])
 
-          #map_and_orientation = map.add(orientation)
+        map_and_orientation = map.add(orientation)
 
-        #map_orientation_out = self.cnn_map_orientation(map_and_orientation)
-        map_orientation_out = self.cnn_map_orientation(map)
+        map_orientation_out = self.cnn_map_orientation(map_and_orientation)
+        #map_orientation_out = self.cnn_map_orientation(map)
 
 
         map_orientation_out = map_orientation_out.view(1, map_state.shape[0], -1)

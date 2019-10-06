@@ -47,12 +47,13 @@ class robotEnv():
         self.episodeFinished = False
         # Variables to calculate the reward
         self.deltaDist = 0.20
+       # self.discountFactorMue = 0.1
         self.discountFactorMue = 0.05
         self.closestDistance = 0
         self.startGoalDistance = 0
         self.lastDistance = 0
         self.startTime =0
-        self.delta_vel_memory = Memory(30)
+        self.delta_vel_memory = Memory(10)
 
         self.lastTime = 0
         self.angl_acc = 0
@@ -277,8 +278,8 @@ class robotEnv():
             print(self.startGoalDistance)
             print(float(self.stepCounter))
 
-            #reward = 0.5 +  float((float(20*5.0/self.currentRobotSpeed) / float(self.stepCounter)))
-            reward = 1
+            reward = 0.5 #+  float((float(20*5.0/self.currentRobotSpeed) / float(self.stepCounter)))
+            #reward = 1
             print("reached Goal")
             EndEpisode = True
 
