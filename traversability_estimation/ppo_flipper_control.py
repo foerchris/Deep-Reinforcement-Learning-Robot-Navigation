@@ -39,13 +39,13 @@ from inspect import currentframe, getframeinfo
 
 MODELPATH = os.path.join(dirname, 'train_getjag/ppo_flipper/Model')
 
-load_model = True
+load_model = False
 last_number_of_frames = 0
 frame_idx  = 0 + last_number_of_frames
 num_envs_possible = 16;
 num_envs = 0;
 
-summary_writer = tf.summary.FileWriter("train_getjag/ppo_flipper/Tensorboard")
+#summary_writer = tf.summary.FileWriter("train_getjag/ppo_flipper/Tensorboard")
 
 #test_writer = tf.summary.FileWriter("train_getjag/train_" + str(0), sess.graph)
 
@@ -143,11 +143,11 @@ def plot(frame_idx, rewards):
 #Hyper params:
 hidden_size      = 576
 lr               = 1e-3
-lr_decay_epoch   = 40.0
+lr_decay_epoch   = 100.0
 init_lr          = lr
 epoch            = 0.0
 
-max_num_steps    = 400
+max_num_steps    = 350
 num_steps        = 2000
 mini_batch_size  = 200
 ppo_epochs       = 8
@@ -155,7 +155,7 @@ GAMMA            = 0.99
 GAE_LAMBDA       = 0.95
 PPO_EPSILON      = 0.2
 CRICIC_DISCOUNT  = 0.5
-ENTROPY_BETA     = 0.0001
+ENTROPY_BETA     = 0.01
 eta              = 0.01
 threshold_reward = 5
 threshold_reached_goal = 2
@@ -183,7 +183,7 @@ f.write("\n LSTM: Yes")
 f.write("\n Architecture: 2")
 f.close()
 
-agent = Agent(state_size_map, state_size_orientation, num_outputs, hidden_size, stack_size, load_model, MODELPATH, lr, mini_batch_size, num_envs, lr_decay_epoch, init_lr, eta)
+agent = Agent(state_size_map, state_size_orientation, num_outputs, hidden_size, stack_size, load_model, MODELPATH, lr, mini_batch_size, num_envs, lr_decay_epoch, init_lr, writer, eta)
 max_frames = 500000
 test_rewards = []
 
@@ -198,7 +198,7 @@ for i in range(0, num_envs):
 envs.set_episode_length(episode_length)
 
 
-early_stop = True
+early_stop = False
 
 best_reach_goal = 0
 
@@ -355,17 +355,24 @@ while frame_idx < max_frames and not early_stop:
                 test_rewards.append(mean_test_rewards)
                 print("update tensorboard")
                 #plot(frame_idx, test_rewards)
-                summary = tf.Summary()
-                summary.value.add(tag='Mittelwert/Belohnungen', simple_value=float(mean_test_rewards))
-                summary.value.add(tag='Mittelwert/Epsioden Länge', simple_value=float(mean_test_lenghts))
-                summary.value.add(tag='Mittelwert/Std-Abweichung', simple_value=float(mean_total_std))
-                summary.value.add(tag='Mittelwert/Ziel erreich', simple_value=float(mean_reach_goal))
-                summary.value.add(tag='Mittelwert/anzahl Episoden', simple_value=float(number_of_episodes))
-                number_of_episodes = 0
+                #summary = tf.Summary()
+                #summary.value.add(tag='Mittelwert/Belohnungen', simple_value=float(mean_test_rewards))
+                #summary.value.add(tag='Mittelwert/Epsioden Länge', simple_value=float(mean_test_lenghts))
+                #summary.value.add(tag='Mittelwert/Std-Abweichung', simple_value=float(mean_total_std))
+                #summary.value.add(tag='Mittelwert/Ziel erreich', simple_value=float(mean_reach_goal))
+                #summary.value.add(tag='Mittelwert/anzahl Episoden', simple_value=float(number_of_episodes))
+                #number_of_episodes = 0
                 #summary.value.add(tag='Perf/mean_test_log_probs', simple_value=float(mean_test_log_probs))
                 #summary.value.add(tag='Perf/mean_test_values', simple_value=float(mean_test_values))
                 #summary.value.add(tag='Perf/mean_test_entropy', simple_value=float(mean_test_entropy))
-                summary_writer.add_summary(summary, frame_idx)
+                #writer.add_summary(summary, frame_idx)
+
+                writer.add_scalar('Mittelwert/Belohnungen', float(mean_test_rewards), frame_idx)
+                writer.add_scalar('Mittelwert/Epsioden Länge', float(mean_test_lenghts), frame_idx)
+                writer.add_scalar('Mittelwert/Std-Abweichung', float(mean_total_std), frame_idx)
+                writer.add_scalar('Mittelwert/Verähltniss Ziel erreich', float(mean_reach_goal), frame_idx)
+                writer.add_scalar('Mittelwert/anzahl Episoden', float(number_of_episodes), frame_idx)
+                number_of_episodes = 0
 
                 for name, param in agent.feature_net.named_parameters():
                     if param.requires_grad:
@@ -462,14 +469,11 @@ agent.feature_net.eval()
 agent.ac_model.eval()
 eval_steps = 10000 + frame_idx
 steps_idx = 0
-
 while frame_idx < eval_steps:
     with torch.no_grad():
-        for _ in range(num_steps):
+        #for _ in range(num_steps):
             print(frame_idx)
-            print(type(map_state))
             map_state = torch.FloatTensor(map_state).to(device)
-            print(type(orientation_state))
 
             orientation_state = torch.FloatTensor(orientation_state).to(device)
 
@@ -484,9 +488,9 @@ while frame_idx < eval_steps:
 
 
             action = dist.mean.detach()
-            #print("action" + str(action))
+            print("action" + str(action))
             action = dist.mean.detach()
-            #print("action" + str(action))
+            print("action" + str(action))
 
             # this is a x,1 tensor is kontains alle the possible actions
             # the cpu command move it from a gpu tensor to a cpu tensor
@@ -568,33 +572,49 @@ total_std = []
 mean_reach_goal = np.mean(reach_goal)
 reach_goal = []
 
-mean_flipp_over = np.mean(flipp_over)
-flipp_over = []
+#mean_flipp_over = np.mean(flipp_over)
+#flipp_over = []
 
-mean_stucked = np.mean(stucked)
-stucked = []
+#mean_stucked = np.mean(stucked)
+#stucked = []
 
 
 test_rewards.append(mean_test_rewards)
 print("save tensorboard")
 # plot(frame_idx, test_rewards)
-summary = tf.Summary()
-summary.value.add(tag='Mittelwert/Belohnungen', simple_value=float(mean_test_rewards))
-summary.value.add(tag='Mittelwert/Epsioden Länge', simple_value=float(mean_test_lenghts))
-summary.value.add(tag='Mittelwert/Std-Abweichung', simple_value=float(mean_total_std))
-summary.value.add(tag='Mittelwert/Verähltniss Ziel erreich', simple_value=float(mean_reach_goal))
-summary.value.add(tag='Mittelwert/anzahl Episoden', simple_value=float(number_of_episodes))
-number_of_episodes = 0
-summary.value.add(tag='Mittelwert/anzahl Ziel erreicht', simple_value=float(number_reached_goal))
-number_reached_goal = 0
+#summary = tf.Summary()
+#summary.value.add(tag='Mittelwert/Belohnungen', simple_value=float(mean_test_rewards))
+#summary.value.add(tag='Mittelwert/Epsioden Länge', simple_value=float(mean_test_lenghts))
+#summary.value.add(tag='Mittelwert/Std-Abweichung', simple_value=float(mean_total_std))
+#summary.value.add(tag='Mittelwert/Verähltniss Ziel erreich', simple_value=float(mean_reach_goal))
+#summary.value.add(tag='Mittelwert/anzahl Episoden', simple_value=float(number_of_episodes))
+#number_of_episodes = 0
+#summary.value.add(tag='Mittelwert/anzahl Ziel erreicht', simple_value=float(number_reached_goal))
+#number_reached_goal = 0
 
-summary.value.add(tag='Mittelwert/Verähltniss Umgekippt', simple_value=float(mean_flipp_over))
+#summary.value.add(tag='Mittelwert/Verähltniss Umgekippt', simple_value=float(mean_flipp_over))
 
-summary.value.add(tag='Mittelwert/Verähltniss Stucked', simple_value=float(mean_stucked))
+#summary.value.add(tag='Mittelwert/Verähltniss Stucked', simple_value=float(mean_stucked))
 
 
-summary.value.add(tag='Mittelwert/Mittelwert Winkelbeschleunigung', simple_value=float(np.mean(total_angluar_acc)))
+#summary.value.add(tag='Mittelwert/Mittelwert Winkelbeschleunigung', simple_value=float(np.mean(total_angluar_acc)))
+
+
+
+
+
+
+writer.add_scalar('Mittelwert/Belohnungen', float(mean_test_rewards), frame_idx)
+writer.add_scalar('Mittelwert/Epsioden Länge', float(mean_test_lenghts), frame_idx)
+writer.add_scalar('Mittelwert/Std-Abweichung', float(mean_total_std), frame_idx)
+writer.add_scalar('Mittelwert/Verähltniss Ziel erreich', float(mean_reach_goal), frame_idx)
+writer.add_scalar('Mittelwert/anzahl Episoden', float(number_of_episodes), frame_idx)
+writer.add_scalar('Mittelwert/anzahl Ziel erreich', float(number_reached_goal), frame_idx)
+
+#writer.add_scalar('Mittelwert/Verähltniss Umgekippt', float(mean_flipp_over), frame_idx)
+#writer.add_scalar('Mittelwert/Verähltniss Stucked', float(mean_stucked), frame_idx)
+#writer.add_scalar('Mittelwert/Mittelwert Winkelbeschleunigung', float(total_angluar_acc), frame_idx)
 
 total_angluar_acc = []
 
-summary_writer.add_summary(summary, frame_idx)
+#writer.add_summary(summary, frame_idx)
