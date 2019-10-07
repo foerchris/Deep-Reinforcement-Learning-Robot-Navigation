@@ -32,7 +32,7 @@ class Agent():
         use_cuda = torch.cuda.is_available()
         self.device   = torch.device("cuda" if use_cuda else "cpu")
         torch.cuda.empty_cache()
-        self.summary_writer = tf.summary.FileWriter("train_getjag/ppo/Tensorboard")
+       # self.summary_writer = tf.summary.FileWriter("train_getjag/ppo/Tensorboard")
 
         self.feature_net = FeatureNetwork(state_size_map*stack_size, state_size_depth * stack_size, state_size_goal * stack_size, hidden_size, stack_size, lstm_layers).to(self.device)
         self.ac_model = ActorCritic(num_outputs, hidden_size).to(self.device)
@@ -149,11 +149,11 @@ class Agent():
                 sum_loss_critic += critic_loss
                 sum_loss_total += loss
                 sum_entropy += entropy
-        summary = tf.Summary()
-        summary.value.add(tag='Perf/sum_returns', simple_value=float(sum_returns))
-        summary.value.add(tag='Perf/sum_advantage', simple_value=float(sum_advantage))
-        summary.value.add(tag='Perf/sum_loss_actor', simple_value=float(sum_loss_actor))
-        summary.value.add(tag='Perf/sum_loss_critic', simple_value=float(sum_loss_critic))
-        summary.value.add(tag='Perf/sum_loss_total', simple_value=float(sum_loss_total))
-        summary.value.add(tag='Perf/sum_entropy', simple_value=float(sum_entropy))
-        self.summary_writer.add_summary(summary, frame_idx)
+        #summary = tf.Summary()
+        #summary.value.add(tag='Perf/sum_returns', simple_value=float(sum_returns))
+        #summary.value.add(tag='Perf/sum_advantage', simple_value=float(sum_advantage))
+        #summary.value.add(tag='Perf/sum_loss_actor', simple_value=float(sum_loss_actor))
+        #summary.value.add(tag='Perf/sum_loss_critic', simple_value=float(sum_loss_critic))
+        #summary.value.add(tag='Perf/sum_loss_total', simple_value=float(sum_loss_total))
+        #summary.value.add(tag='Perf/sum_entropy', simple_value=float(sum_entropy))
+        #self.summary_writer.add_summary(summary, frame_idx)

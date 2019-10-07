@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from mock.mock import self
+#from mock.mock import self
 from __builtin__ import False
 
 
@@ -91,6 +91,7 @@ class robotEnv():
         self.newRewards = False
 
         self.cell_states = cell_checker(10.0)
+        self.ic.stop()
 
     def set_episode_length(self, EpisodeLength):
         self.EpisodeLength = EpisodeLength
