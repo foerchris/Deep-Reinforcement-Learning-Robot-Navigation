@@ -48,7 +48,7 @@ class robotEnv():
         self.episodeFinished = False
         # Variables to calculate the reward
         self.deltaDist = 0.20
-        self.discountFactorMue = 0.05
+        self.discountFactorMue = 0.1
         self.closestDistance = 0
         self.startGoalDistance = 0
         self.lastDistance = 0
@@ -201,7 +201,7 @@ class robotEnv():
         # reset the model and replace the robot at a random location
         self.ic.stop()
         valiedEnv = False
-
+        self.ic.clcMean()
         # resest the step counter
         self.stepCounter = 0
         # reset the buffer with the velocitys
@@ -264,6 +264,7 @@ class robotEnv():
         self.cell_states.reset_possible_cells()
         self.ic.reach_the_goal = False
         self.newRewards = False
+        self.ic.clcMean()
 
         return self.get_state()
 
@@ -385,7 +386,7 @@ class robotEnv():
         if self.ic.reach_the_goal:
             ##reward = 100
             #reward = 0.5 + (self.startGoalDistance * 5 / self.stepCounter)
-            reward = 1.0 #+ (self.startGoalDistance * 5 / self.stepCounter)
+            reward = 0.5  + (self.startGoalDistance * 2 / self.stepCounter)
 
             print( float(self.stepCounter)/ float(self.EpisodeLength))
             #if(self.stepCounter==400):

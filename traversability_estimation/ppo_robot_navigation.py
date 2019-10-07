@@ -152,10 +152,10 @@ lr_decay_epoch   = 100.0
 init_lr          = lr
 epoch            = 0.0
 
-max_num_steps    = 150
+max_num_steps    = 200
 num_steps        = 2000
 mini_batch_size  = 200
-ppo_epochs       = 6
+ppo_epochs       = 8
 max_grad_norm    = 0.5
 GAMMA            = 0.99
 GAE_LAMBDA       = 0.95

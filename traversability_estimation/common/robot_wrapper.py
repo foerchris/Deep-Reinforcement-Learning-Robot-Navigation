@@ -46,9 +46,13 @@ class image_converter():
         self.countPub = 0
         self.robotAction = 7
         self.main()
-        self.deltaDist = 1
+        self.deltaDist = 0.4
         self.reach_the_goal = False
-
+        self.last_time = time.time()
+        self.linearVelovitys = []
+        self.angularVelovitys = []
+        self.linearAccelerations = []
+        self.angularAccelerations = []
 
     def stop(self):
         self.velocities.linear.x = 0
@@ -86,10 +90,50 @@ class image_converter():
        # if self.countPub % 1000 == 0:
          #   self.countPub = 0
          #   print("worker_" + str(self.number) + "self.velocities" + str(self.velocities))
+
+    def clcMean(self):
+
+        meanLinVel = np.mean(self.linearVelovitys)
+        meanAngVel = np.mean(self.angularVelovitys)
+        meanLinAcc = np.mean(self.linearAccelerations)
+        meanAngAcc = np.mean(self.angularAccelerations)
+
+        self.linearVelovitys = []
+        self.angularVelovitys = []
+        self.linearAccelerations = []
+        self.angularAccelerations = []
+
+        print("measures.txt" + "w")
+
+        file = open("Gazebo Script/measures.txt", "w")
+        file.write(str(meanLinVel))
+        file.write(str(meanAngVel))
+        file.write(str(meanLinAcc))
+        file.write(str(meanAngAcc))
+
+        file.close()
+        return meanLinVel, meanAngVel, meanLinAcc, meanAngAcc
+
     def robotPoseCallback(self,odom_data):
         self.currentRobotPose = odom_data
 
+        self.linearVelovitys.append(odom_data.twist.twist.linear.x)
+        self.angularVelovitys.append(odom_data.twist.twist.angular.z)
 
+        deltaTime = time.time() - self.last_time
+
+
+        if(abs(deltaTime - 0.023) < 0.02 ):
+            linearAccel = abs(odom_data.twist.twist.linear.x - self.last_linear_velocity)/deltaTime
+            angularAccel = abs(odom_data.twist.twist.angular.z- self.last_angular_velocity)/deltaTime
+            self.linearAccelerations.append(linearAccel)
+            self.angularAccelerations.append(angularAccel)
+
+
+        self.last_linear_velocity = odom_data.twist.twist.linear.x
+
+        self.last_angular_velocity = odom_data.twist.twist.angular.z
+        self.last_time = time.time()
 
     # callback to get the goal robot pose as position (x,y,z) and orientation as quaternion (x,y,z,w)
     def goalCallback(self,odom_data):
