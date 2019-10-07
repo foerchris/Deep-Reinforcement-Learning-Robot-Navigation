@@ -39,14 +39,14 @@ from agents import Agent
 
 MODELPATH = os.path.join(dirname, 'train_getjag/ppo/Model')
 
-load_model = False
+load_model = True
 last_number_of_frames = 0
 
 frame_idx  = 0 + last_number_of_frames
 num_envs_possible = 16;
 num_envs = 0;
 
-summary_writer = tf.summary.FileWriter("train_getjag/ppo/Tensorboard")
+#summary_writer = tf.summary.FileWriter("train_getjag/ppo/Tensorboard")
 
 #test_writer = tf.summary.FileWriter("train_getjag/train_" + str(0), sess.graph)
 
@@ -207,7 +207,7 @@ for i in range(0, num_envs):
 envs.set_episode_length(episode_length)
 
 
-early_stop = False
+early_stop = True
 
 best_reward = 0
 
@@ -494,10 +494,10 @@ agent.ac_model.eval()
 frame_idx = 0
 eval_steps = 6000
 steps_idx = 0
-
-while frame_idx < eval_steps :
+one_episode=True
+while frame_idx < eval_steps  and one_episode:
     with torch.no_grad():
-        for _ in range(num_steps):
+     #   for _ in range(num_steps):
             print("frame_idx: " + str(frame_idx))
             frame_idx += 1
 
@@ -526,7 +526,7 @@ while frame_idx < eval_steps :
 
             for i in range(0, num_envs):
                 if (done[i] == True):
-
+                    one_episode = False
                     number_of_episodes += 1
                     if (reward[i] >= 0.2):
                         number_reached_goal += 1
@@ -590,14 +590,14 @@ reach_goal = []
 test_rewards.append(mean_test_rewards)
 print("save tensorboard")
 # plot(frame_idx, test_rewards)
-summary = tf.Summary()
-summary.value.add(tag='Mittelwert/Belohnungen', simple_value=float(mean_test_rewards))
-summary.value.add(tag='Mittelwert/Epsioden Länge', simple_value=float(mean_test_lenghts))
-summary.value.add(tag='Mittelwert/Std-Abweichung', simple_value=float(mean_total_std))
-summary.value.add(tag='Mittelwert/Ziel erreich', simple_value=float(mean_reach_goal))
-summary.value.add(tag='Mittelwert/anzahl Episoden', simple_value=float(number_of_episodes))
-number_of_episodes = 0
-summary.value.add(tag='Mittelwert/anzahl Ziel erreicht', simple_value=float(number_reached_goal))
-number_reached_goal = 0
+#summary = tf.Summary()
+#summary.value.add(tag='Mittelwert/Belohnungen', simple_value=float(mean_test_rewards))
+#summary.value.add(tag='Mittelwert/Epsioden Länge', simple_value=float(mean_test_lenghts))
+#summary.value.add(tag='Mittelwert/Std-Abweichung', simple_value=float(mean_total_std))
+#summary.value.add(tag='Mittelwert/Ziel erreich', simple_value=float(mean_reach_goal))
+#summary.value.add(tag='Mittelwert/anzahl Episoden', simple_value=float(number_of_episodes))
+#number_of_episodes = 0
+#summary.value.add(tag='Mittelwert/anzahl Ziel erreicht', simple_value=float(number_reached_goal))
+#number_reached_goal = 0
 
-summary_writer.add_summary(summary, frame_idx + steps_idx)
+#summary_writer.add_summary(summary, frame_idx + steps_idx)

@@ -13,6 +13,7 @@ from sensor_msgs.msg import Image
 from std_msgs.msg import String
 
 from nav_msgs.msg import Odometry
+import time
 
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
@@ -106,10 +107,10 @@ class image_converter():
         print("measures.txt" + "w")
 
         file = open("Gazebo Script/measures.txt", "w")
-        file.write(str(meanLinVel))
-        file.write(str(meanAngVel))
-        file.write(str(meanLinAcc))
-        file.write(str(meanAngAcc))
+        file.write("meanLinVel = " + str(meanLinVel) + "\n")
+        file.write("meanAngVel = " + str(meanAngVel) + "\n")
+        file.write("meanLinAcc = " + str(meanLinAcc) + "\n")
+        file.write("meanAngAcc = " + str(meanAngAcc) + "\n")
 
         file.close()
         return meanLinVel, meanAngVel, meanLinAcc, meanAngAcc
