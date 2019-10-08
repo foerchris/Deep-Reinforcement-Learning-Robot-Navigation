@@ -39,7 +39,7 @@ from agents import Agent
 
 MODELPATH = os.path.join(dirname, 'train_getjag/ppo/Model')
 
-load_model = True
+load_model = False
 last_number_of_frames = 0
 
 frame_idx  = 0 + last_number_of_frames
@@ -152,9 +152,9 @@ init_lr          = lr
 epoch            = 0.0
 
 max_num_steps    = 200
-num_steps        = 2000
-mini_batch_size  = 200
-ppo_epochs       = 8
+num_steps        = 1500
+mini_batch_size  = 1500
+ppo_epochs       = 6
 max_grad_norm    = 0.5
 GAMMA            = 0.99
 GAE_LAMBDA       = 0.95
@@ -206,7 +206,7 @@ for i in range(0, num_envs):
 envs.set_episode_length(episode_length)
 
 
-early_stop = True
+early_stop = False
 
 best_reward = 0
 
@@ -271,7 +271,7 @@ while frame_idx < max_frames and not early_stop:
 
             total_std.append(std.cpu().numpy())
 
-            #print(dist.stddev())
+            print(std)
             #
 
             action = dist.sample()

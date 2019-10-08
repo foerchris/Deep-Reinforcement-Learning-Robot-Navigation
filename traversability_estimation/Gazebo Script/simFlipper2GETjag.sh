@@ -23,10 +23,10 @@ sleep 3
 echo "[$(date +"%T")]: start Loop"
 PIDs=()
 WORKERNUMBER="0"
-NUMBEROFWORKERS="2"
+NUMBEROFWORKERS="4"
 namespace="GETjag"
 tf_prefix="GETjag"
-world="DrlFlipper5Robots.world"
+world="DrlWorld5RobotsWithObjects.world"
 simulator="false"
 startdrlagent="false"
 drlagentStartet="false"
@@ -64,35 +64,35 @@ rosparam set "/Gazebo/simulator_ready" false
 
 i=1
 while [ $i -lt 3 ]
-do  	
+do
 	rosparam set "/GETjag$i/End_of_episode" false
-	rosparam set "/GETjag$i/End_of_enviroment" false 
+	rosparam set "/GETjag$i/End_of_enviroment" false
 	rosparam set "/GETjag$i/Error_in_simulator" false
 	rosparam set "/GETjag$i/Ready_to_Start_DRL_Agent" false
 	rosparam set "/GETjag$i/worker_ready" True
 	i=$((i+1))
 done
 
-while [ $CANEXIT -lt 4 ] 
+while [ $CANEXIT -lt 4 ]
 do
 
 	truncate -s 0 output.txt
-	CANEXIT=0 
+	CANEXIT=0
 	#reset watchdog
 	echo -e "[$(date +"%T")]: ${GREEN}Starting gazebo with world: ${NC}$world"
-	roslaunch get_gazebo_worlds getjagFlipper2.launch world:=$world gui:=$simulator > output_gazebo.txt 2>&1 &
+	roslaunch get_gazebo_worlds getjag2.launch world:=$world gui:=$simulator > output_gazebo.txt 2>&1 &
 	PIDs+=($!)
 	sleep 10
 	STARTTIME=$(date +%s.%N)
 	rosparam set "/Gazebo/simulator_ready" true
 	pkill gzclient >/dev/null 2>&1
 	PIDs+=($!)
-	if ($simulator -eq "true"); then		
+	if ($simulator -eq "true"); then
 		roslaunch  get_gazebo_worlds gzclient.launch gui:="true" > /dev/null 2>&1 &
 		PIDs+=($!)
 		sleep 1
 	fi
-		
+
 	#loop
 	while [ $CANEXIT -lt 1 ]; do
 		#ros not started
@@ -100,31 +100,33 @@ do
 		while [ $i -lt 3 ]
 		do
 			if (grep -q "Unable to set value" output_gazebo.txt); then
-			
+
 				rosparam set "/GETjag$i/Error_in_simulator" true
 				rosparam set "/GETjag$i/Ready_to_Start_DRL_Agent" false
 
-				echo -e "[$(date +"%T")] Error in simulator${NC}"
+				echo -e "[$(date +"%T")] Error in simulator${NC} Unable to set value "
 				i=5
 				CANEXIT=3
 				PIDs+=($!)
-				
+				sleep 0.5
+
 			elif (grep -q "Segmentation fault" output_gazebo.txt); then
-			
+
 				rosparam set "/GETjag$i/Error_in_simulator" true
 				rosparam set "/GETjag$i/Ready_to_Start_DRL_Agent" false
 
-				echo -e "[$(date +"%T")] Error in simulator${NC}"
+				echo -e "[$(date +"%T")] Error in simulator${NC}: Segmentation fault"
 				i=5
 				CANEXIT=3
 				PIDs+=($!)
-				
+				sleep 0.5
+
 			elif  ($(rosparam get /GETjag$i/End_of_enviroment)); then
-							
+
 				echo -e "[$(date +"%T")]: End reached, close the enviroment${NC}!"
 				CANEXIT=4
 				i=5
-			
+
 			else
 				sleep 0.5
 			fi
@@ -135,7 +137,7 @@ do
 	RUNTIME=$(convertsecs2hms $(echo "$ENDTIME - $STARTTIME" | bc))
 	echo -e "[$(date +"%T")]: ${CYAN}Simulation on world: ${NC}$world ${CYAN}with #: ${NC}$NUMBEROFITERATIONS ${CYAN}took: ${NC}$RUNTIME seconds"
 	echo "[$(date +"%T")]: Killing: ${PIDs[@]}"
-	
+
     #rosnode kill drl_gaz_robot_env_wrapper
 	kill ${PIDs[@]} >/dev/null 2>&1
 	pkill gzserver >/dev/null 2>&1
