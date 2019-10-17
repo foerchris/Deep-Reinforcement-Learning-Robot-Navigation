@@ -21,7 +21,7 @@ sys.path.append(os.path.join(dirname, 'common'))
 from model_lstm import FeatureNetwork, ActorCritic
 
 class Agent():
-    def __init__(self,state_size_map, state_size_depth , state_size_goal, num_outputs, hidden_size, stack_size, lstm_layers,load_model, MODELPATH, learning_rate, mini_batch_size, worker_number, lr_decay_epoch, init_lr, eta = 0.01):
+    def __init__(self,state_size_map, state_size_depth , state_size_goal, num_outputs, hidden_size, stack_size, lstm_layers,load_model, MODELPATH, learning_rate, mini_batch_size, worker_number, lr_decay_epoch, init_lr,writer, eta = 0.01):
         self.eta = eta
         self.lr_decay_epoch = lr_decay_epoch
         self.init_lr = init_lr
@@ -32,7 +32,7 @@ class Agent():
         use_cuda = torch.cuda.is_available()
         self.device   = torch.device("cuda" if use_cuda else "cpu")
         torch.cuda.empty_cache()
-        self.summary_writer = tf.summary.FileWriter("train_getjag/ppo/Tensorboard")
+        self.writer = writer
 
         self.feature_net = FeatureNetwork(state_size_map*stack_size, state_size_depth * stack_size, state_size_goal * stack_size, hidden_size, stack_size, lstm_layers).to(self.device)
         self.ac_model = ActorCritic(num_outputs, hidden_size).to(self.device)
@@ -58,15 +58,16 @@ class Agent():
         return returns
 
 
-    def ppo_iter(self, map_states, depth_states, goal_states, actor_hidden_h, actor_hidden_c,  critic_hidden_h, critic_hidden_c, actions, log_probs, returns, advantage, value):
+    def ppo_iter(self, map_states, depth_states, goal_states, actor_hidden_states_h, actor_hidden_states_c, critic_hidden_states_h, critic_hidden_states_c, actions, log_probs, returns, advantage, value):
         batch_size = map_states.size(0)
         for _ in range(batch_size // self.mini_batch_size):
             rand_ids = np.random.randint(0, batch_size-self.worker_number, self.mini_batch_size)
             #print('map_states[rand_ids, :].shape' + str(map_states[rand_ids, :].shape))
-            yield map_states[rand_ids, :], depth_states[rand_ids, :], goal_states[rand_ids, :], actor_hidden_h[rand_ids, :], actor_hidden_c[rand_ids, :], critic_hidden_h[rand_ids, :], critic_hidden_c[rand_ids, :], actions[rand_ids, :], log_probs[rand_ids, :], returns[rand_ids, :], advantage[rand_ids, :], value[rand_ids, :]
+            yield map_states[rand_ids, :], depth_states[rand_ids, :], goal_states[rand_ids, :], actor_hidden_states_h[rand_ids, :], actor_hidden_states_c[rand_ids, :], \
+                  critic_hidden_states_h[rand_ids, :], critic_hidden_states_c[rand_ids, :], actions[rand_ids, :], log_probs[rand_ids, :], returns[rand_ids, :], advantage[rand_ids, :], value[rand_ids, :]
 
 
-    def ppo_update(self, frame_idx, ppo_epochs, map_states, depth_states, goal_states, actor_hidden_h, actor_hidden_c,  critic_hidden_h, critic_hidden_c, actions, log_probs, returns, advantages, values, epoch, clip_param=0.2, discount=0.5, beta=0.001, max_grad_norm =0.5):
+    def ppo_update(self, frame_idx, ppo_epochs, map_states, depth_states, goal_states, actor_hidden_states_h, actor_hidden_states_c, critic_hidden_states_h, critic_hidden_states_c, actions, log_probs, returns, advantages, values, epoch, clip_param=0.2, discount=0.5, beta=0.001, max_grad_norm =0.5):
         count_steps = 0
         sum_returns = 0.0
         sum_advantage = 0.0
@@ -79,7 +80,8 @@ class Agent():
         advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
         for update in range(1 ,ppo_epochs +1 ):
-            for  map_state, depth_state, goal_state, actor_hidden_h, actor_hidden_c,  critic_hidden_h, critic_hidden_c, action, old_log_probs, return_, advantage, old_value in self.ppo_iter(map_states, depth_states, goal_states, actor_hidden_h, actor_hidden_c,  critic_hidden_h, critic_hidden_c, actions, log_probs,
+            for  map_state, depth_state, goal_state, actor_hidden_h, actor_hidden_c,\
+                 critic_hidden_h, critic_hidden_c, action, old_log_probs, return_, advantage, old_value in self.ppo_iter(map_states, depth_states, goal_states, actor_hidden_states_h, actor_hidden_states_c, critic_hidden_states_h, critic_hidden_states_c, actions, log_probs,
                                                                             returns, advantages, values):
 
                 actor_hidden_h = actor_hidden_h.view(1, -1, actor_hidden_h.shape[2])
@@ -142,11 +144,9 @@ class Agent():
                 sum_loss_critic += critic_loss
                 sum_loss_total += loss
                 sum_entropy += entropy
-        summary = tf.Summary()
-        summary.value.add(tag='Perf/sum_returns', simple_value=float(sum_returns))
-        summary.value.add(tag='Perf/sum_advantage', simple_value=float(sum_advantage))
-        summary.value.add(tag='Perf/sum_loss_actor', simple_value=float(sum_loss_actor))
-        summary.value.add(tag='Perf/sum_loss_critic', simple_value=float(sum_loss_critic))
-        summary.value.add(tag='Perf/sum_loss_total', simple_value=float(sum_loss_total))
-        summary.value.add(tag='Perf/sum_entropy', simple_value=float(sum_entropy))
-        self.summary_writer.add_summary(summary, frame_idx)
+        self.writer.add_scalar('Perf/sum_returns', float(sum_returns), frame_idx)
+        self.writer.add_scalar('Perf/sum_advantage', float(sum_advantage), frame_idx)
+        self.writer.add_scalar('Perf/sum_loss_actor', float(sum_loss_actor), frame_idx)
+        self.writer.add_scalar('Perf/sum_loss_critic', float(sum_loss_critic), frame_idx)
+        self.writer.add_scalar('Perf/sum_loss_total', float(sum_loss_total), frame_idx)
+        self.writer.add_scalar('Perf/sum_entropy', float(sum_entropy), frame_idx)
