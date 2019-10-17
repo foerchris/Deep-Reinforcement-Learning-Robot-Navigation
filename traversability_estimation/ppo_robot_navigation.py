@@ -46,7 +46,6 @@ frame_idx  = 0 + last_number_of_frames
 num_envs_possible = 16;
 num_envs = 0;
 
-summary_writer = tf.summary.FileWriter("train_getjag/ppo/Tensorboard")
 
 #test_writer = tf.summary.FileWriter("train_getjag/train_" + str(0), sess.graph)
 
@@ -155,6 +154,9 @@ epoch            = 0.0
 max_num_steps    = 200
 num_steps        = 2000
 mini_batch_size  = 200
+
+#num_steps        = 1500
+#mini_batch_size  = 1500
 ppo_epochs       = 6
 max_grad_norm    = 0.5
 GAMMA            = 0.99
@@ -192,7 +194,7 @@ f.write("\n Architecture: 1")
 
 f.close()
 
-agent = Agent(state_size_map, state_size_depth , state_size_goal, num_outputs, hidden_size, stack_size, lstm_layers,load_model, MODELPATH, lr, mini_batch_size, num_envs, lr_decay_epoch, init_lr, eta)
+agent = Agent(state_size_map, state_size_depth , state_size_goal, num_outputs, hidden_size, stack_size, lstm_layers,load_model, MODELPATH, lr, mini_batch_size, num_envs, lr_decay_epoch, init_lr,writer, eta)
 max_frames = 500000
 test_rewards = []
 
@@ -272,7 +274,7 @@ while frame_idx < max_frames and not early_stop:
 
             total_std.append(std[1].cpu().numpy())
 
-            #print(dist.stddev())
+            print(std)
             #
 
             action = dist.sample()
@@ -388,17 +390,14 @@ while frame_idx < max_frames and not early_stop:
                 test_rewards.append(mean_test_rewards)
                 print("save tensorboard")
                 # plot(frame_idx, test_rewards)
-                summary = tf.Summary()
-                summary.value.add(tag='Mittelwert/Belohnungen', simple_value=float(mean_test_rewards))
-                summary.value.add(tag='Mittelwert/Epsioden Länge', simple_value=float(mean_test_lenghts))
-                summary.value.add(tag='Mittelwert/Std-Abweichung', simple_value=float(mean_total_std))
-                summary.value.add(tag='Mittelwert/Ziel erreich', simple_value=float(mean_reach_goal))
-                summary.value.add(tag='Mittelwert/anzahl Episoden', simple_value=float(number_of_episodes))
+                writer.add_scalar('Mittelwert/Belohnungen', float(mean_test_rewards), frame_idx)
+                writer.add_scalar('Mittelwert/Epsioden Länge', float(mean_test_lenghts), frame_idx)
+                writer.add_scalar('Mittelwert/Std-Abweichung', float(mean_total_std), frame_idx)
+                writer.add_scalar('Mittelwert/Verähltniss Ziel erreich', float(mean_reach_goal), frame_idx)
+                writer.add_scalar('Mittelwert/anzahl Episoden', float(number_of_episodes), frame_idx)
                 number_of_episodes = 0
-                summary.value.add(tag='Mittelwert/anzahl Ziel erreicht', simple_value=float(number_reached_goal))
+                writer.add_scalar('Mittelwert/anzahl  Ziel erreicht', float(number_reached_goal), frame_idx)
                 number_reached_goal = 0
-
-                summary_writer.add_summary(summary, frame_idx)
 
                 for name, param in agent.feature_net.named_parameters():
                     if param.requires_grad:
@@ -591,15 +590,13 @@ reach_goal = []
 
 test_rewards.append(mean_test_rewards)
 print("save tensorboard")
-# plot(frame_idx, test_rewards)
-summary = tf.Summary()
-summary.value.add(tag='Mittelwert/Belohnungen', simple_value=float(mean_test_rewards))
-summary.value.add(tag='Mittelwert/Epsioden Länge', simple_value=float(mean_test_lenghts))
-summary.value.add(tag='Mittelwert/Std-Abweichung', simple_value=float(mean_total_std))
-summary.value.add(tag='Mittelwert/Ziel erreich', simple_value=float(mean_reach_goal))
-summary.value.add(tag='Mittelwert/anzahl Episoden', simple_value=float(number_of_episodes))
-number_of_episodes = 0
-summary.value.add(tag='Mittelwert/anzahl Ziel erreicht', simple_value=float(number_reached_goal))
-number_reached_goal = 0
 
-summary_writer.add_summary(summary, frame_idx + steps_idx)
+
+writer.add_scalar('Mittelwert/Belohnungen', float(mean_test_rewards), frame_idx)
+writer.add_scalar('Mittelwert/Epsioden Länge', float(mean_test_lenghts), frame_idx)
+writer.add_scalar('Mittelwert/Std-Abweichung', float(mean_total_std), frame_idx)
+writer.add_scalar('Mittelwert/Verähltniss Ziel erreich', float(mean_reach_goal), frame_idx)
+writer.add_scalar('Mittelwert/anzahl Episoden', float(number_of_episodes), frame_idx)
+number_of_episodes = 0
+writer.add_scalar('Mittelwert/anzahl  Ziel erreicht', float(number_reached_goal), frame_idx)
+number_reached_goal = 0

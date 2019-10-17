@@ -57,6 +57,10 @@ class image_converter():
         self.last_linear_velocity = 0
         self.last_angular_velocity = 0
 
+        self.last_linear_velocity = 0
+
+        self.last_angular_velocity = 0
+
     def stop(self):
         self.velocities.linear.x = 0
         self.velocities.angular.z = 0
@@ -107,6 +111,11 @@ class image_converter():
         self.angularAccelerations = []
 
         #print("measures.txt" + "w")
+        self.last_linear_velocity = 0
+
+        self.last_angular_velocity = 0
+
+       # print("measures.txt" + "w")
 
         file = open("Gazebo Script/measures.txt", "w")
         file.write("meanLinVel = " + str(meanLinVel) + "\n")

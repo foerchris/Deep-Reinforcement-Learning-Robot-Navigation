@@ -188,6 +188,13 @@ class ActorCritic(nn.Module):
             nn.Linear(hidden_size/2, num_outputs),
             nn.Tanh()
         )
+
+        self.var = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size),
+            nn.Linear(hidden_size, num_outputs),
+            nn.Softplus()
+        )
+
         self.log_std = nn.Parameter(torch.ones(1, num_outputs) * std)
 
     def init_weights(self,m):
@@ -231,7 +238,11 @@ class ActorCritic(nn.Module):
 
         mu = self.actor(lstm_out)
 
+
         std = self.log_std.exp().expand_as(mu)
+       # var = self.var(lstm_out)
+       # std = torch.sqrt(var).data.cpu().numpy()
+        #std = torch.sqrt(var).data
         #print('mu' + str(mu))
         #print('std' + str(std))
         dist = Normal(mu, std)
