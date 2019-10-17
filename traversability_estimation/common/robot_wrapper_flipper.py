@@ -55,6 +55,7 @@ class image_converter():
         self.last_angular_velocity_y = 0
         self.last_nsecs = 0
         self.last_time = time.time()
+        self.array = []
 
     def stop(self):
         self.flipperVelFront = self.flipperPoseFront.current_pos
@@ -109,10 +110,13 @@ class image_converter():
         #    self.flipperVelRear = 0
 
         self.startStopRobotPub.publish( self.startStopRobot)
-        self.robotFlipperFrontPub.publish( self.flipperVelFront)
-        self.robotFlipperRearPub.publish( self.flipperVelRear)
+       # self.robotFlipperFrontPub.publish( self.flipperVelFront)
+       # self.robotFlipperRearPub.publish( self.flipperVelRear)
 
         roll, pitch, yaw = self.returnRollPitchYaw(self.currentPose.pose.pose.orientation)
+
+
+
 
         if roll>=self.tip_over_angle or roll<=-self.tip_over_angle or pitch>=self.tip_over_angle or pitch<=-self.tip_over_angle:
             self.robot_flip_over = True
@@ -134,7 +138,11 @@ class image_converter():
 
         deltaTime = time.time() - self.last_time
 
+        print("current value: " + str(imu_data.angular_velocity.y))
 
+        self.array.append(imu_data.angular_velocity.y)
+        print("min value: " + str(np.min(self.array)))
+        print("max value: " + str(np.max(self.array)))
         if(abs(deltaTime - 0.023) < 0.02 ):
           ##  print("deltaTime2: " + str(deltaTime))
 

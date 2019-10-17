@@ -18,7 +18,7 @@ import os
 dirname = os.path.dirname(__file__)
 import sys
 sys.path.append(os.path.join(dirname, 'common'))
-from model import FeatureNetwork, ActorCritic
+from model_lstm import FeatureNetwork, ActorCritic
 
 class Agent():
     def __init__(self,state_size_map, state_size_depth , state_size_goal, num_outputs, hidden_size, stack_size, lstm_layers,load_model, MODELPATH, learning_rate, mini_batch_size, worker_number, lr_decay_epoch, init_lr, eta = 0.01):
@@ -43,7 +43,7 @@ class Agent():
         else:
             self.feature_net.apply(self.feature_net.init_weights)
             self.ac_model.apply(self.ac_model.init_weights)
-        #self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=learning_rate)
+
         self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=learning_rate)
 
 
@@ -58,16 +58,15 @@ class Agent():
         return returns
 
 
-    def ppo_iter(self, map_states, depth_states, goal_states, hidden_states_h, hidden_states_c, actions, log_probs, returns, advantage, value):
+    def ppo_iter(self, map_states, depth_states, goal_states, actor_hidden_h, actor_hidden_c,  critic_hidden_h, critic_hidden_c, actions, log_probs, returns, advantage, value):
         batch_size = map_states.size(0)
-        #print('map_states.shape' + str(map_states.shape))
         for _ in range(batch_size // self.mini_batch_size):
-            rand_ids = np.random.randint(0, batch_size, self.mini_batch_size)
+            rand_ids = np.random.randint(0, batch_size-self.worker_number, self.mini_batch_size)
             #print('map_states[rand_ids, :].shape' + str(map_states[rand_ids, :].shape))
-            yield map_states[rand_ids, :], depth_states[rand_ids, :], goal_states[rand_ids, :], hidden_states_h[rand_ids, :], hidden_states_c[rand_ids, :], actions[rand_ids, :], log_probs[rand_ids, :], returns[rand_ids, :], advantage[rand_ids, :], value[rand_ids, :]
+            yield map_states[rand_ids, :], depth_states[rand_ids, :], goal_states[rand_ids, :], actor_hidden_h[rand_ids, :], actor_hidden_c[rand_ids, :], critic_hidden_h[rand_ids, :], critic_hidden_c[rand_ids, :], actions[rand_ids, :], log_probs[rand_ids, :], returns[rand_ids, :], advantage[rand_ids, :], value[rand_ids, :]
 
 
-    def ppo_update(self, frame_idx, ppo_epochs, map_states, depth_states, goal_states, hidden_states_h, hidden_states_c, actions, log_probs, returns, advantages, values, epoch, clip_param=0.2, discount=0.5, beta=0.001, max_grad_norm =0.5):
+    def ppo_update(self, frame_idx, ppo_epochs, map_states, depth_states, goal_states, actor_hidden_h, actor_hidden_c,  critic_hidden_h, critic_hidden_c, actions, log_probs, returns, advantages, values, epoch, clip_param=0.2, discount=0.5, beta=0.001, max_grad_norm =0.5):
         count_steps = 0
         sum_returns = 0.0
         sum_advantage = 0.0
@@ -76,37 +75,27 @@ class Agent():
         sum_entropy = 0.0
         sum_loss_total = 0.0
 
-        #lr = self.init_lr * (0.1**(epoch // self.lr_decay_epoch))
-
-        #lr = self.init_lr - (self.init_lr - self.final_lr)*(1-math.exp(-epoch/self.lr_decay_epoch))
-        #print('learning rate' + str(lr))
-        #if(lr>=1e-5):
-        # lr=1e-5
-       # print('learning rate: ' + str(lr))
-        #self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lr)
-        #self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lr)
-
-
-
         # Normalize the advantages
         advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
         for update in range(1 ,ppo_epochs +1 ):
-            for  map_state, depth_state, goal_state, hidden_state_h, hidden_state_c, action, old_log_probs, return_, advantage, old_value in self.ppo_iter(map_states, depth_states, goal_states, hidden_states_h, hidden_states_c, actions, log_probs,
+            for  map_state, depth_state, goal_state, actor_hidden_h, actor_hidden_c,  critic_hidden_h, critic_hidden_c, action, old_log_probs, return_, advantage, old_value in self.ppo_iter(map_states, depth_states, goal_states, actor_hidden_h, actor_hidden_c,  critic_hidden_h, critic_hidden_c, actions, log_probs,
                                                                             returns, advantages, values):
 
-                hidden_state_h = hidden_state_h.view(self.lstm_layers, -1, hidden_state_h.shape[2])
-                hidden_state_c = hidden_state_c.view(self.lstm_layers, -1, hidden_state_c.shape[2])
+                actor_hidden_h = actor_hidden_h.view(1, -1, actor_hidden_h.shape[2])
+                actor_hidden_c = actor_hidden_c.view(1, -1, actor_hidden_c.shape[2])
+
+                critic_hidden_h = critic_hidden_h.view(1, -1, critic_hidden_h.shape[2])
+                critic_hidden_c = critic_hidden_c.view(1, -1, critic_hidden_c.shape[2])
 
                 frac = 1.0 - (update -1.0) / ppo_epochs
 
                 lrnow = self.init_lr * frac
-                print('lrnow' + str(lrnow))
 
                 self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lrnow)
 
-                features, _, _ = self.feature_net(map_state, depth_state, goal_state, hidden_state_h, hidden_state_c)
-                dist, value, _ = self.ac_model(features)
+                features = self.feature_net(map_state, depth_state, goal_state)
+                dist, value, _, _, _ ,_ ,_ = self.ac_model(features, actor_hidden_h, actor_hidden_c,  critic_hidden_h, critic_hidden_c)
 
                 vpredclipped = old_value + torch.clamp(value - old_value , - clip_param, clip_param)
 

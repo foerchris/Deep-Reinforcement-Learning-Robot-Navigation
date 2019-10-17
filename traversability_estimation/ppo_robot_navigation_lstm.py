@@ -34,7 +34,7 @@ from tensorboardX import SummaryWriter
 from multiprocessing_env import SubprocVecEnv
 from robot_env import robotEnv
 
-from agents import Agent
+from agents_lstm import Agent
 
 
 MODELPATH = os.path.join(dirname, 'train_getjag/ppo/Model')
@@ -146,15 +146,15 @@ def plot(frame_idx, rewards):
 
 #Hyper params:
 hidden_size      = 576*2 #576*2
-lstm_layers      = 1
+lstm_layers      = 2
 lr               = 3e-4 #1e-3 # 3e-4
 lr_decay_epoch   = 100.0
 init_lr          = lr
 epoch            = 0.0
 
 max_num_steps    = 200
-num_steps        = 2000
-mini_batch_size  = 200
+num_steps        = 20
+mini_batch_size  = 4
 ppo_epochs       = 6
 max_grad_norm    = 0.5
 GAMMA            = 0.99
@@ -209,7 +209,7 @@ envs.set_episode_length(episode_length)
 
 early_stop = False
 
-best_reward = 20000
+best_reward = 3
 
 map_state,depth_state, goal_state = envs.reset()
 
@@ -217,8 +217,10 @@ map_state, stacked_map_frames = stack_frames(stacked_map_frames, map_state, stac
 depth_state, stacked_depth_frames = stack_frames(stacked_depth_frames, depth_state, stack_size, True)
 goal_state, stacked_goal_frames = stack_frames(stacked_goal_frames, goal_state, stack_size, True)
 
-agent.feature_net.hidden = agent.feature_net.init_hidden(num_envs)
-(hidden_state_h, hidden_state_c) = agent.feature_net.hidden
+(actor_hidden_state_h, actor_hidden_state_c) = agent.ac_model.init_hidden(num_envs)
+
+(critic_hidden_state_h, critic_hidden_state_c) = agent.ac_model.init_hidden(num_envs)
+
 
 done_cache = []
 step_count = []
@@ -251,7 +253,11 @@ while frame_idx < max_frames and not early_stop:
     actions = []
     rewards = []
     masks = []
+    actor_hidden_states_h = []
+    actor_hidden_states_c = []
 
+    critic_hidden_states_h = []
+    critic_hidden_states_c = []
 
     agent.feature_net.eval()
     agent.ac_model.eval()
@@ -266,9 +272,9 @@ while frame_idx < max_frames and not early_stop:
 
 
 
-            features, next_hidden_state_h, next_hidden_state_c = agent.feature_net(map_state, depth_state, goal_state, hidden_state_h, hidden_state_c)
+            features, = agent.feature_net(map_state, depth_state, goal_state)
 
-            dist, value, std  = agent.ac_model( features)
+            dist, value, std, next_actor_hidden_state_h, next_actor_hidden_state_c, next_critic_hidden_state_h, next_critic_hidden_state_c  = agent.ac_model(features,actor_hidden_state_h, actor_hidden_state_c,  critic_hidden_state_h, critic_hidden_state_c)
 
             total_std.append(std[1].cpu().numpy())
 
@@ -302,29 +308,22 @@ while frame_idx < max_frames and not early_stop:
                                                                  i)
                     _, stacked_goal_frames = reset_single_frame(stacked_goal_frames, next_goal_state[i], stack_size, i)
 
-                    (single_hidden_state_h, single_hidden_state_c) = agent.feature_net.init_hidden(1)
+                    (single_hidden_h, single_hidden_c) = agent.ac_model.init_hidden(1)
+                    print("single_hidden_h.shape" +str(single_hidden_h.shape))
+                    print("single_hidden_c.shape" +str(single_hidden_c.shape))
 
-                    for layer in range(0,lstm_layers):
-                        next_hidden_state_h[layer][i] = single_hidden_state_h[layer][0].detach()
-                        next_hidden_state_c[layer][i] = single_hidden_state_c[layer][0].detach()
+                    for layer in range(0,1):
+                        next_actor_hidden_state_h[layer][i] = single_hidden_h[layer][0].detach()
+                        next_actor_hidden_state_c[layer][i] = single_hidden_c[layer][0].detach()
 
-
-
-                    #next_hidden_state_c[0][i] = single_hidden_state_c.detach()
-                   # print("number_of_episodes" + str(number_of_episodes))
-                   # print("number_reached_goal" + str(number_reached_goal))
+                        next_critic_hidden_state_h[layer][i] = single_hidden_h[layer][0].detach()
+                        next_critic_hidden_state_c[layer][i] = single_hidden_c[layer][0].detach()
 
             next_map_state, stacked_map_frames = stack_frames(stacked_map_frames,next_map_state,stack_size, False)
             next_depth_state, stacked_depth_frames = stack_frames(stacked_depth_frames,next_depth_state,stack_size, False)
             next_goal_state, stacked_goal_frames = stack_frames(stacked_goal_frames,next_goal_state,stack_size, False)
 
 
-            next_features, _, _ = agent.feature_net(torch.FloatTensor(next_map_state).to(device), torch.FloatTensor(next_depth_state).to(device) , torch.FloatTensor(next_goal_state).to(device), next_hidden_state_h, next_hidden_state_h)
-
-            # total reward = int reward
-            #intrinsic_reward = agent.compute_intrinsic_reward(features, next_features, action)
-
-            #reward +=  intrinsic_reward
             total_reward += reward
 
             for i in range(0, num_envs):
@@ -354,8 +353,11 @@ while frame_idx < max_frames and not early_stop:
             done = torch.FloatTensor(1 - done).unsqueeze(1).to(device)
             masks.append(done)
 
-            hidden_states_h.append(hidden_state_h)
-            hidden_states_c.append(hidden_state_c)
+            actor_hidden_states_h.append(actor_hidden_state_h)
+            actor_hidden_states_c.append(actor_hidden_state_c)
+
+            critic_hidden_states_h.append(critic_hidden_state_h)
+            critic_hidden_states_c.append(critic_hidden_state_c)
 
             map_states.append(map_state)
             depth_states.append(depth_state)
@@ -367,8 +369,11 @@ while frame_idx < max_frames and not early_stop:
             depth_state = next_depth_state
             goal_state = next_goal_state
 
-            hidden_state_h = next_hidden_state_h
-            hidden_state_c = next_hidden_state_c
+            actor_hidden_state_h = next_actor_hidden_state_h
+            actor_hidden_state_c = next_actor_hidden_state_c
+
+            critic_hidden_state_h = next_critic_hidden_state_h
+            critic_hidden_state_c = next_critic_hidden_state_c
 
             #torch.cuda.empty_cache()
             frame_idx += 1
@@ -434,13 +439,12 @@ while frame_idx < max_frames and not early_stop:
             next_goal_state = torch.FloatTensor(next_goal_state).to(device)
 
 
-
     agent.feature_net.train()
     agent.ac_model.train()
 
-    next_features, _, _= agent.feature_net(next_map_state, next_depth_state, next_goal_state, hidden_state_h, hidden_state_c)
+    next_features = agent.feature_net(next_map_state, next_depth_state, next_goal_state)
 
-    _, next_value, _ = agent.ac_model(next_features)
+    _, next_value, _, _, _, _, _ = agent.ac_model(next_features, next_actor_hidden_state_h, next_actor_hidden_state_c, next_critic_hidden_state_h, next_critic_hidden_state_c)
     returns = agent.compute_gae(next_value, rewards, masks, values, GAMMA, GAE_LAMBDA)
 
     returns = torch.cat(returns).detach()
@@ -449,18 +453,24 @@ while frame_idx < max_frames and not early_stop:
     map_states = torch.cat(map_states)
     depth_states = torch.cat(depth_states)
     goal_states = torch.cat(goal_states)
-    hidden_states_h = torch.cat(hidden_states_h)
-    hidden_states_c = torch.cat(hidden_states_c)
 
-    hidden_states_h = hidden_states_h.view(-1, lstm_layers,hidden_states_h.shape[2])
-    hidden_states_c = hidden_states_c.view(-1, lstm_layers, hidden_states_c.shape[2])
+    actor_hidden_states_h = torch.cat(actor_hidden_states_h)
+    actor_hidden_states_c = torch.cat(actor_hidden_states_c)
 
+    critic_hidden_states_h = torch.cat(critic_hidden_states_h)
+    critic_hidden_states_c = torch.cat(critic_hidden_states_c)
+
+    actor_hidden_states_h = actor_hidden_states_h.view(-1, 1, actor_hidden_states_h.shape[2])
+    actor_hidden_states_c = actor_hidden_states_c.view(-1, 1, actor_hidden_states_c.shape[2])
+
+    critic_hidden_states_h = critic_hidden_states_h.view(-1, 1, critic_hidden_states_h.shape[2])
+    critic_hidden_states_c = critic_hidden_states_c.view(-1, 1, critic_hidden_states_c.shape[2])
 
     actions = torch.cat(actions)
     advantages = returns - values
 
     epoch += 1.0
-    agent.ppo_update(frame_idx, ppo_epochs,  map_states, depth_states, goal_states, hidden_states_h, hidden_states_c , actions, log_probs, returns, advantages, values, epoch, PPO_EPSILON, CRICIC_DISCOUNT, ENTROPY_BETA, max_grad_norm)
+    agent.ppo_update(frame_idx, ppo_epochs,  map_states, depth_states, goal_states, actor_hidden_states_h, actor_hidden_states_c, critic_hidden_states_h, critic_hidden_states_c , actions, log_probs, returns, advantages, values, epoch, PPO_EPSILON, CRICIC_DISCOUNT, ENTROPY_BETA, max_grad_norm)
 
 
 

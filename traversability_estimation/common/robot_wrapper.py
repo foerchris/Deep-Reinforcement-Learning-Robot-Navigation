@@ -47,13 +47,15 @@ class image_converter():
         self.countPub = 0
         self.robotAction = 7
         self.main()
-        self.deltaDist = 0.4
+        self.deltaDist = 1
         self.reach_the_goal = False
         self.last_time = time.time()
         self.linearVelovitys = []
         self.angularVelovitys = []
         self.linearAccelerations = []
         self.angularAccelerations = []
+        self.last_linear_velocity = 0
+        self.last_angular_velocity = 0
 
     def stop(self):
         self.velocities.linear.x = 0
@@ -65,11 +67,11 @@ class image_converter():
         action[0] = action[0] / 2
         if(action[0] >= 1.0):
             action[0] = 1.0
-        elif(action[0] <= 0.01):
-            action[0] = 0.01
+        elif(action[0] <= 0.1):
+            action[0] = 0.1
        # elif(action[0] <= 0.05):
         #    action[0] = 0.05
-
+        action[1] = action[1]*3
         if (action[1] >= 1.0):
             action[1] = 1.0
         elif (action[1] <= -1.0):
@@ -104,14 +106,15 @@ class image_converter():
         self.linearAccelerations = []
         self.angularAccelerations = []
 
-        print("measures.txt" + "w")
+        #print("measures.txt" + "w")
 
         file = open("Gazebo Script/measures.txt", "w")
         file.write("meanLinVel = " + str(meanLinVel) + "\n")
         file.write("meanAngVel = " + str(meanAngVel) + "\n")
         file.write("meanLinAcc = " + str(meanLinAcc) + "\n")
         file.write("meanAngAcc = " + str(meanAngAcc) + "\n")
-
+        self.last_linear_velocity = 0
+        self.last_angular_velocity = 0
         file.close()
         return meanLinVel, meanAngVel, meanLinAcc, meanAngAcc
 
@@ -168,17 +171,17 @@ class image_converter():
             print(e)
 
         #print(cv_image.shape)
-        #image = cv_image[:,:,0]
-        #alpha = cv_image[:,:,1]
+        image = cv_image[:,:,0]
+        alpha = cv_image[:,:,1]
 
-        #map = np.stack((cv2.resize(image, (200, 200)),cv2.resize(alpha, (200, 200))))
+        map = np.stack((cv2.resize(image, (200, 200)),cv2.resize(alpha, (200, 200))))
         #print(map.shape)
 
         #if(self.number== 2):
          #   plt.imshow(cv_image,cmap="gray")
           #  plt.show()
-
-        self.eleviationImage = cv2.resize(cv_image, (200, 200))
+        self.eleviationImage = map
+       # self.eleviationImage = cv2.resize(cv_image, (200, 200))
 
 
 
