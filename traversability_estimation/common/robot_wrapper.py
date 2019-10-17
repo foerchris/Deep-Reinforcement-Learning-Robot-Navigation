@@ -4,6 +4,7 @@
 import rospy
 import roslib
 import numpy as np
+from collections import deque  # Ordered collection with ends
 
 from geometry_msgs.msg import Point
 from geometry_msgs.msg import Twist
@@ -47,18 +48,13 @@ class image_converter():
         self.countPub = 0
         self.robotAction = 7
         self.main()
-        self.deltaDist = 0.4
+        self.deltaDist = 1
         self.reach_the_goal = False
-        self.last_time = time.time()
-        self.linearVelovitys = []
-        self.angularVelovitys = []
-        self.linearAccelerations = []
-        self.angularAccelerations = []
 
-        self.last_linear_velocity = 0
-
-        self.last_angular_velocity = 0
-
+        self.mean_lin_vel = Memory(5)
+        self.mean_angl_vel = Memory(5)
+        self.mean_lin_vel.resetBuffer()
+        self.mean_angl_vel.resetBuffer()
     def stop(self):
         self.velocities.linear.x = 0
         self.velocities.angular.z = 0
@@ -67,10 +63,12 @@ class image_converter():
 
         action[0] += 1.0
         action[0] = action[0] / 2
+        action[1] = action[1] * 3
+
         if(action[0] >= 1.0):
             action[0] = 1.0
-        elif(action[0] <= 0.01):
-            action[0] = 0.01
+        elif(action[0] <= 0.1):
+            action[0] = 0.1
        # elif(action[0] <= 0.05):
         #    action[0] = 0.05
 
@@ -98,21 +96,15 @@ class image_converter():
 
     def clcMean(self):
 
-        meanLinVel = np.mean(self.linearVelovitys)
-        meanAngVel = np.mean(self.angularVelovitys)
-        meanLinAcc = np.mean(self.linearAccelerations)
-        meanAngAcc = np.mean(self.angularAccelerations)
+        meanLinVel, meanLinAcc = self.mean_lin_vel.totalMean()
+        meanAngVel, meanAngAcc = self.mean_angl_vel.totalMean()
+       # print("meanLinVel = " + str(meanLinVel))
+       # print("meanAngVel = " + str(meanAngVel))
+       # print("meanLinAcc = " + str(meanLinAcc))
+       # print("meanAngAcc = " + str(meanAngAcc))
 
-        self.linearVelovitys = []
-        self.angularVelovitys = []
-        self.linearAccelerations = []
-        self.angularAccelerations = []
+        ##print("linearAccelerations max = " + str(np.max(self.linearAccelerations)))
 
-        self.last_linear_velocity = 0
-
-        self.last_angular_velocity = 0
-
-       # print("measures.txt" + "w")
 
         file = open("Gazebo Script/measures.txt", "w")
         file.write("meanLinVel = " + str(meanLinVel) + "\n")
@@ -126,23 +118,8 @@ class image_converter():
     def robotPoseCallback(self,odom_data):
         self.currentRobotPose = odom_data
 
-        self.linearVelovitys.append(odom_data.twist.twist.linear.x)
-        self.angularVelovitys.append(odom_data.twist.twist.angular.z)
-
-        deltaTime = time.time() - self.last_time
-
-
-        if(abs(deltaTime - 0.023) < 0.02 ):
-            linearAccel = abs(odom_data.twist.twist.linear.x - self.last_linear_velocity)/deltaTime
-            angularAccel = abs(odom_data.twist.twist.angular.z- self.last_angular_velocity)/deltaTime
-            self.linearAccelerations.append(linearAccel)
-            self.angularAccelerations.append(angularAccel)
-
-
-        self.last_linear_velocity = odom_data.twist.twist.linear.x
-
-        self.last_angular_velocity = odom_data.twist.twist.angular.z
-        self.last_time = time.time()
+        self.mean_lin_vel.add(odom_data.twist.twist.linear.x)
+        self.mean_angl_vel.add(odom_data.twist.twist.angular.z)
 
     # callback to get the goal robot pose as position (x,y,z) and orientation as quaternion (x,y,z,w)
     def goalCallback(self,odom_data):
@@ -176,17 +153,18 @@ class image_converter():
             print(e)
 
         #print(cv_image.shape)
-        #image = cv_image[:,:,0]
-        #alpha = cv_image[:,:,1]
+        image = cv_image[:,:,0]
+        alpha = cv_image[:,:,1]
 
-        #map = np.stack((cv2.resize(image, (200, 200)),cv2.resize(alpha, (200, 200))))
+        map = np.stack((cv2.resize(image, (200, 200)),cv2.resize(alpha, (200, 200))))
+        self.eleviationImage = map
         #print(map.shape)
 
         #if(self.number== 2):
          #   plt.imshow(cv_image,cmap="gray")
           #  plt.show()
 
-        self.eleviationImage = cv2.resize(cv_image, (200, 200))
+        #self.eleviationImage = cv2.resize(cv_image, (200, 200))
 
 
 
@@ -213,3 +191,69 @@ class image_converter():
 
     def shoutdown_node(self):
         rospy.signal_shutdown("because reason")
+
+class Memory():
+    def __init__(self, size):
+        self.buffer = deque(maxlen=size)
+        self.size = size
+        self.counter = 1
+        self.returnMean = False
+        self.reset_buffer = False
+
+        self.lastVel = 0
+        self.last_time = time.time()
+        self.velovitys = []
+        self.accelerations = []
+
+    def add(self, value):
+        if(self.reset_buffer):
+            self.resetBuffer()
+
+        self.buffer.append(value)
+        if (self.counter < self.size):
+            self.counter += 1
+        else:
+            self.returnMean = True
+            self.clcAcc()
+
+    def resetBuffer(self):
+        self.counter = 0
+        self.returnMean = False
+        self.buffer = deque(maxlen=self.size)
+
+        self.lastVel = 0
+        self.last_time = time.time()
+        self.velovitys = []
+        self.accelerations = []
+        self.reset_buffer = False
+
+
+    def clcAcc(self):
+        vel = self.mean()
+        self.velovitys.append(abs(vel))
+        deltaTime = time.time() - self.last_time
+        if (abs(deltaTime - 0.023) < 0.02):
+            accel = abs(vel - self.lastVel) / deltaTime
+            self.accelerations.append(abs(accel))
+
+        self.lastVel = vel
+        self.last_time = time.time()
+
+    def totalMean(self):
+        self.reset_buffer = True
+        return np.mean(self.velovitys), np.mean(self.accelerations)
+
+    def mean(self):
+        if self.returnMean:
+            return np.mean(self.buffer)
+        else:
+            return 0.02
+
+    def var(self):
+        if self.returnMean:
+            return np.var(self.buffer)
+        else:
+            return 0.02
+
+    def returnNumpyArray(self):
+        return np.asarray(self.buffer)

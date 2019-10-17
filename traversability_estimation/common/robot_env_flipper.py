@@ -53,7 +53,7 @@ class robotEnv():
         self.startGoalDistance = 0
         self.lastDistance = 0
         self.startTime =0
-        self.delta_vel_memory = Memory(10)
+        self.delta_vel_memory = Memory(30)
 
         self.lastTime = 0
         self.angl_acc = 0
@@ -153,6 +153,7 @@ class robotEnv():
     def reset(self):
         # reset the model and replace the robot at a random location
         self.ic.stop()
+        self.ic.clcMean()
         valiedEnv = False
         self.delta_vel_memory.resetBuffer()
         self.ic.flipperVelFront = 0
@@ -206,10 +207,11 @@ class robotEnv():
         self.startTime = time.time()
         self.lastTime = self.startTime
 
-        sleep(0.2)
+        sleep(1)
         self.ic.acceleration_to_high = 0
         self.ic.robot_flip_over = False
         self.ic.biggestangularAccelz =0
+        self.ic.reset()
 
         return self.get_state()
 

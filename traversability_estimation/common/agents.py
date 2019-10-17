@@ -38,8 +38,8 @@ class Agent():
         self.ac_model = ActorCritic(num_outputs, hidden_size).to(self.device)
 
         if(load_model):
-            self.feature_net.load_state_dict(torch.load(MODELPATH + '/save_ppo_feature_net.dat'))
-            self.ac_model.load_state_dict(torch.load(MODELPATH + '/save_ppo_ac_model.dat'))
+            self.feature_net.load_state_dict(torch.load(MODELPATH + '/save_ppo_feature_net_best_reward.dat'))
+            self.ac_model.load_state_dict(torch.load(MODELPATH + '/save_ppo_ac_model_best_reward.dat'))
         else:
             self.feature_net.apply(self.feature_net.init_weights)
             self.ac_model.apply(self.ac_model.init_weights)
@@ -64,9 +64,9 @@ class Agent():
         batch_size = map_states.size(0)
         #print('map_states.shape' + str(map_states.shape))
         for _ in range(batch_size // self.mini_batch_size):
-            rand_ids = np.random.randint(0, batch_size-self.worker_number, self.mini_batch_size)
+            rand_ids = np.random.randint(0, batch_size, self.mini_batch_size)
             #print('map_states[rand_ids, :].shape' + str(map_states[rand_ids, :].shape))
-            yield map_states[rand_ids, :], depth_states[rand_ids, :], goal_states[rand_ids, :], hidden_states_h[rand_ids, :], hidden_states_c[rand_ids, :], map_states[rand_ids+self.worker_number, :], depth_states[rand_ids+self.worker_number, :], goal_states[rand_ids+self.worker_number, :], actions[rand_ids, :], log_probs[rand_ids, :], returns[rand_ids, :], advantage[rand_ids, :], value[rand_ids, :]
+            yield map_states[rand_ids, :], depth_states[rand_ids, :], goal_states[rand_ids, :], hidden_states_h[rand_ids, :], hidden_states_c[rand_ids, :], actions[rand_ids, :], log_probs[rand_ids, :], returns[rand_ids, :], advantage[rand_ids, :], value[rand_ids, :]
 
 
     def ppo_update(self, frame_idx, ppo_epochs, map_states, depth_states, goal_states, hidden_states_h, hidden_states_c, actions, log_probs, returns, advantages, values, epoch, clip_param=0.2, discount=0.5, beta=0.001, max_grad_norm =0.5):
@@ -80,26 +80,30 @@ class Agent():
 
         #lr = self.init_lr * (0.1**(epoch // self.lr_decay_epoch))
 
-        lr = self.init_lr - (self.init_lr - self.final_lr)*(1-math.exp(-epoch/self.lr_decay_epoch))
-        print('learning rate' + str(lr))
+        #lr = self.init_lr - (self.init_lr - self.final_lr)*(1-math.exp(-epoch/self.lr_decay_epoch))
+        #print('learning rate' + str(lr))
         #if(lr>=1e-5):
         # lr=1e-5
        # print('learning rate: ' + str(lr))
         #self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lr)
-        self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lr)
 
 
 
         # Normalize the advantages
         advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
-        for _ in range(ppo_epochs):
-            for  map_state, depth_state, goal_state, hidden_state_h, hidden_state_c, next_map_state, next_depth_state, next_goal_state, action, old_log_probs, return_, advantage, old_value in self.ppo_iter(map_states, depth_states, goal_states, hidden_states_h, hidden_states_c, actions, log_probs,
+        for update in range(ppo_epochs):
+            for  map_state, depth_state, goal_state, hidden_state_h, hidden_state_c, action, old_log_probs, return_, advantage, old_value in self.ppo_iter(map_states, depth_states, goal_states, hidden_states_h, hidden_states_c, actions, log_probs,
                                                                             returns, advantages, values):
 
                 hidden_state_h = hidden_state_h.view(self.lstm_layers, -1, hidden_state_h.shape[2])
                 hidden_state_c = hidden_state_c.view(self.lstm_layers, -1, hidden_state_c.shape[2])
 
+                frac = 1.0 - (update -1.0) / ppo_epochs
+                lrnow = self.init_lr*frac
+
+                self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()),
+                                            lr=lrnow)
 
                 features, _, _ = self.feature_net(map_state, depth_state, goal_state, hidden_state_h, hidden_state_c)
                 dist, value, _ = self.ac_model(features)
