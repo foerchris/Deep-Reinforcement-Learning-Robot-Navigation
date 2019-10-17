@@ -48,7 +48,7 @@ class robotEnv():
         self.episodeFinished = False
         # Variables to calculate the reward
         self.deltaDist = 0.20
-        self.discountFactorMue = 0.1
+        self.discountFactorMue = 0.2
         self.closestDistance = 0
         self.startGoalDistance = 0
         self.lastDistance = 0
@@ -159,17 +159,28 @@ class robotEnv():
 
         # norrm input data between -1 and 1
         depthData = np.divide(depthData, 10)
-        #eleviationData[0] = np.divide(eleviationData[0], 65536)  # 255
-        #eleviationData[1] = np.divide(eleviationData[1], 65536)  # 255
-       # plt.imshow(eleviationData[0],cmap="gray")
+        #print(np.max(eleviationData[0]))
+        #print(np.max(eleviationData[1]))
+       # eleviationData[0] = np.divide(eleviationData[0], 65536)  # 255
+       # eleviationData[1] = np.divide(eleviationData[1], 65536)  # 255
+        #print(eleviationData[0].shape)
+        #print(eleviationData[1].shape)
+
+        #plt.imshow(eleviationData[0],cmap="gray")
+        #plt.show()
+        #plt.imshow(eleviationData[1],cmap="gray")
+        #plt.show()
+        eleviationData[0] = np.add(eleviationData[0],0.2)
+        eleviationData = np.multiply(eleviationData[0],eleviationData[1])
+        #plt.imshow(eleviationData,cmap="gray")
+        #plt.show()
+       # plt.imshow(eleviationData,cmap="gray")
        # plt.show()
-       # plt.imshow(eleviationData[1],cmap="gray")
-       # plt.show()
-        print("eleviationData[0]" + str(eleviationData[0].shape))
+
        # eleviationData[0] = np.add(eleviationData[0],0.2)
        # eleviationData = np.multiply(eleviationData[0],eleviationData[1])
-        eleviationData = eleviationData[0]
-        print("eleviationData" + str(eleviationData.shape))
+        #eleviationData = eleviationData[0]
+
 
        # eleviationData = eleviationData[0]
         # print("eleviationData.shape: " +str(eleviationData.shape))
@@ -390,7 +401,8 @@ class robotEnv():
         if self.ic.reach_the_goal:
             ##reward = 100
             #reward = 0.5 + (self.startGoalDistance * 5 / self.stepCounter)
-            reward = 0.5  + (self.startGoalDistance * 4 / self.stepCounter)
+
+            reward = 0.5  + (self.startGoalDistance * 3 / self.stepCounter)
 
             print( float(self.stepCounter)/ float(self.EpisodeLength))
             #if(self.stepCounter==400):

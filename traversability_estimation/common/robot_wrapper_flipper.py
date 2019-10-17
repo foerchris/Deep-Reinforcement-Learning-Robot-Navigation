@@ -120,10 +120,13 @@ class image_converter():
         #    self.flipperVelRear = 0
 
         self.startStopRobotPub.publish( self.startStopRobot)
-        self.robotFlipperFrontPub.publish( self.flipperVelFront)
-        self.robotFlipperRearPub.publish( self.flipperVelRear)
+       # self.robotFlipperFrontPub.publish( self.flipperVelFront)
+       # self.robotFlipperRearPub.publish( self.flipperVelRear)
 
         roll, pitch, yaw = self.returnRollPitchYaw(self.currentPose.pose.pose.orientation)
+
+
+
 
         if roll>=self.tip_over_angle or roll<=-self.tip_over_angle or pitch>=self.tip_over_angle or pitch<=-self.tip_over_angle:
             self.robot_flip_over = True
@@ -155,6 +158,7 @@ class image_converter():
         if (angularAccely >= maxAngularAccel):
             self.acceleration_to_high = angularAccely
             self.accelZ = angularAccely
+
 
     def clcMean(self):
 

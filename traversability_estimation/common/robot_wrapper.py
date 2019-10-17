@@ -71,7 +71,7 @@ class image_converter():
             action[0] = 0.1
        # elif(action[0] <= 0.05):
         #    action[0] = 0.05
-
+        action[1] = action[1]*3
         if (action[1] >= 1.0):
             action[1] = 1.0
         elif (action[1] <= -1.0):
@@ -95,16 +95,8 @@ class image_converter():
          #   print("worker_" + str(self.number) + "self.velocities" + str(self.velocities))
 
     def clcMean(self):
-
         meanLinVel, meanLinAcc = self.mean_lin_vel.totalMean()
         meanAngVel, meanAngAcc = self.mean_angl_vel.totalMean()
-       # print("meanLinVel = " + str(meanLinVel))
-       # print("meanAngVel = " + str(meanAngVel))
-       # print("meanLinAcc = " + str(meanLinAcc))
-       # print("meanAngAcc = " + str(meanAngAcc))
-
-        ##print("linearAccelerations max = " + str(np.max(self.linearAccelerations)))
-
 
         file = open("Gazebo Script/measures.txt", "w")
         file.write("meanLinVel = " + str(meanLinVel) + "\n")
@@ -157,14 +149,15 @@ class image_converter():
         alpha = cv_image[:,:,1]
 
         map = np.stack((cv2.resize(image, (200, 200)),cv2.resize(alpha, (200, 200))))
-        self.eleviationImage = map
+
         #print(map.shape)
 
         #if(self.number== 2):
          #   plt.imshow(cv_image,cmap="gray")
           #  plt.show()
 
-        #self.eleviationImage = cv2.resize(cv_image, (200, 200))
+        self.eleviationImage = map
+       # self.eleviationImage = cv2.resize(cv_image, (200, 200))
 
 
 
