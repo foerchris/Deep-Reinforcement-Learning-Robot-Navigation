@@ -48,7 +48,7 @@ class robotEnv():
         self.episodeFinished = False
         # Variables to calculate the reward
         self.deltaDist = 0.20
-        self.discountFactorMue = 0.2
+        self.discountFactorMue = 0.05
         self.closestDistance = 0
         self.startGoalDistance = 0
         self.lastDistance = 0

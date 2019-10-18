@@ -146,7 +146,9 @@ def plot(frame_idx, rewards):
 #Hyper params:
 hidden_size      = 576*2 #576*2
 lstm_layers      = 1
-lr               = 3e-4 #1e-3 # 3e-4
+#lr               = 3e-4 #1e-3 # 3e-4
+lr               = 1e-3 #1e-3 # 3e-4
+
 lr_decay_epoch   = 100.0
 init_lr          = lr
 epoch            = 0.0
@@ -163,7 +165,7 @@ GAMMA            = 0.99
 GAE_LAMBDA       = 0.95
 PPO_EPSILON      = 0.2
 CRICIC_DISCOUNT  = 0.5
-ENTROPY_BETA     = 0.001
+ENTROPY_BETA     = 0.01
 eta              = 0.01
 threshold_reward = 5
 threshold_reached_goal = 2

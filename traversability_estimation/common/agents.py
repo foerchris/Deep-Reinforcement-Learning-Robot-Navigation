@@ -80,13 +80,13 @@ class Agent():
 
         #lr = self.init_lr * (0.1**(epoch // self.lr_decay_epoch))
 
-        #lr = self.init_lr - (self.init_lr - self.final_lr)*(1-math.exp(-epoch/self.lr_decay_epoch))
+        lr = self.init_lr - (self.init_lr - self.final_lr)*(1-math.exp(-epoch/self.lr_decay_epoch))
         #print('learning rate' + str(lr))
         #if(lr>=1e-5):
         # lr=1e-5
        # print('learning rate: ' + str(lr))
         #self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lr)
-        #self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lr)
+        self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lr)
 
 
 
@@ -100,12 +100,12 @@ class Agent():
                 hidden_state_h = hidden_state_h.view(self.lstm_layers, -1, hidden_state_h.shape[2])
                 hidden_state_c = hidden_state_c.view(self.lstm_layers, -1, hidden_state_c.shape[2])
 
-                frac = 1.0 - (update -1.0) / ppo_epochs
+                ##frac = 1.0 - (update -1.0) / ppo_epochs
 
-                lrnow = self.init_lr * frac
-                print('lrnow' + str(lrnow))
+                ##lrnow = self.init_lr * frac
+               # print('lrnow' + str(lrnow))
 
-                self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lrnow)
+                #self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lrnow)
 
                 features, _, _ = self.feature_net(map_state, depth_state, goal_state, hidden_state_h, hidden_state_c)
                 dist, value, _ = self.ac_model(features)
