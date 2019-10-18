@@ -77,7 +77,7 @@ do
 	i=1
 	while [ $i -lt 2 ] 
 	do  	
-		roslaunch flipper_control FlipperControl.launch namespace:="$namespace$i" > /dev/null 2>&1 &
+		#roslaunch flipper_control FlipperControl.launch namespace:="$namespace$i" > /dev/null 2>&1 &
 		PIDs+=($!)
 		i=$((i+1))
 	done

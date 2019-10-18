@@ -39,7 +39,7 @@ from inspect import currentframe, getframeinfo
 
 MODELPATH = os.path.join(dirname, 'train_getjag/ppo_flipper/Model')
 
-load_model = False
+load_model = True
 last_number_of_frames = 0
 frame_idx  = 0 + last_number_of_frames
 num_envs_possible = 16;
@@ -198,30 +198,31 @@ for i in range(0, num_envs):
 envs.set_episode_length(episode_length)
 
 
-early_stop = False
+early_stop = True
 
 best_reach_goal = 0
+if(not early_stop):
 
-map_state, orientation_state = envs.reset()
+    map_state, orientation_state = envs.reset()
 
-map_state, stacked_map_frames = stack_frames(stacked_map_frames, map_state, stack_size, True)
-orientation_state, stacked_orientation_frames = stack_frames(stacked_orientation_frames, orientation_state, stack_size, True)
+    map_state, stacked_map_frames = stack_frames(stacked_map_frames, map_state, stack_size, True)
+    orientation_state, stacked_orientation_frames = stack_frames(stacked_orientation_frames, orientation_state, stack_size, True)
 
-agent.feature_net.hidden = agent.feature_net.init_hidden(num_envs)
-(hidden_state_h, hidden_state_c) = agent.feature_net.hidden
+    agent.feature_net.hidden = agent.feature_net.init_hidden(num_envs)
+    (hidden_state_h, hidden_state_c) = agent.feature_net.hidden
 
-done_cache = []
-step_count = []
-total_reward = []
-total_total_reward = []
-total_step_count = []
-total_std = []
-number_of_episodes = 0
-entropy = 0
-for i in range(0, num_envs):
-    done_cache.append(False)
-    step_count.append(0)
-    total_reward.append(0)
+    done_cache = []
+    step_count = []
+    total_reward = []
+    total_total_reward = []
+    total_step_count = []
+    total_std = []
+    number_of_episodes = 0
+    entropy = 0
+    for i in range(0, num_envs):
+        done_cache.append(False)
+        step_count.append(0)
+        total_reward.append(0)
 
 while frame_idx < max_frames and not early_stop:
 
@@ -453,6 +454,8 @@ total_step_count = []
 total_std = []
 number_of_episodes = 0
 number_reached_goal = 0
+mean_flipp_over = 0
+mean_stucked = 0
 reach_goal = []
 flipp_over= []
 stucked = []
@@ -469,7 +472,10 @@ agent.feature_net.eval()
 agent.ac_model.eval()
 eval_steps = 10000 + frame_idx
 steps_idx = 0
-while frame_idx < eval_steps:
+
+one_eps = True
+
+while frame_idx < eval_steps and one_eps:
     with torch.no_grad():
         #for _ in range(num_steps):
             print(frame_idx)
@@ -502,7 +508,7 @@ while frame_idx < eval_steps:
 
             for i in range(0, num_envs):
                 if (done[i] == True):
-
+                    one_eps = False
                     number_of_episodes += 1
                  #   if (reward[i] >= 0.2):
                   #      number_reached_goal += 1
@@ -572,12 +578,14 @@ total_std = []
 mean_reach_goal = np.mean(reach_goal)
 reach_goal = []
 
-#mean_flipp_over = np.mean(flipp_over)
-#flipp_over = []
+mean_flipp_over = np.mean(flipp_over)
+flipp_over = []
 
-#mean_stucked = np.mean(stucked)
-#stucked = []
+mean_stucked = np.mean(stucked)
+stucked = []
 
+
+total_angluar_acc = np.mean(total_angluar_acc)
 
 test_rewards.append(mean_test_rewards)
 print("save tensorboard")
@@ -611,9 +619,9 @@ writer.add_scalar('Mittelwert/Verähltniss Ziel erreich', float(mean_reach_goal)
 writer.add_scalar('Mittelwert/anzahl Episoden', float(number_of_episodes), frame_idx)
 writer.add_scalar('Mittelwert/anzahl Ziel erreich', float(number_reached_goal), frame_idx)
 
-#writer.add_scalar('Mittelwert/Verähltniss Umgekippt', float(mean_flipp_over), frame_idx)
-#writer.add_scalar('Mittelwert/Verähltniss Stucked', float(mean_stucked), frame_idx)
-#writer.add_scalar('Mittelwert/Mittelwert Winkelbeschleunigung', float(total_angluar_acc), frame_idx)
+writer.add_scalar('Mittelwert/Verähltniss Umgekippt', float(mean_flipp_over), frame_idx)
+writer.add_scalar('Mittelwert/Verähltniss Stucked', float(mean_stucked), frame_idx)
+writer.add_scalar('Mittelwert/Mittelwert Winkelbeschleunigung', float(total_angluar_acc), frame_idx)
 
 total_angluar_acc = []
 

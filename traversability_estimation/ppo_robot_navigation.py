@@ -55,6 +55,7 @@ for i in range(num_envs_possible):
         if (rospy.get_param("/GETjag" + str(i) + "/worker_ready")):
             num_envs += 1
             print("worker_", num_envs)
+#num_envs = 1
 
 def make_env(i):
     def _thunk():
@@ -147,19 +148,17 @@ def plot(frame_idx, rewards):
 hidden_size      = 576*2 #576*2
 lstm_layers      = 1
 #lr               = 3e-4 #1e-3 # 3e-4
-lr               = 1e-3 #1e-3 # 3e-4
+
+lr               = 3e-4 #1e-3 # 3e-4
 
 lr_decay_epoch   = 100.0
 init_lr          = lr
 epoch            = 0.0
 
-max_num_steps    = 200
-num_steps        = 2000
-mini_batch_size  = 200
-
-#num_steps        = 1500
-#mini_batch_size  = 1500
-ppo_epochs       = 6
+max_num_steps    = 300
+num_steps        = 1000
+mini_batch_size  = 100
+ppo_epochs       = 8
 max_grad_norm    = 0.5
 GAMMA            = 0.99
 GAE_LAMBDA       = 0.95
@@ -213,7 +212,7 @@ envs.set_episode_length(episode_length)
 
 early_stop = False
 
-best_reward = 20000
+best_reward = 3
 
 map_state,depth_state, goal_state = envs.reset()
 
@@ -367,6 +366,8 @@ while frame_idx < max_frames and not early_stop:
 
             actions.append(action)
 
+            hidden_state_h = next_hidden_state_h
+            hidden_state_c = next_hidden_state_c
             map_state = next_map_state
             depth_state = next_depth_state
             goal_state = next_goal_state
@@ -495,7 +496,7 @@ for i in range(0, num_envs):
 agent.feature_net.eval()
 agent.ac_model.eval()
 frame_idx = 0
-eval_steps = 6000
+eval_steps = 10000
 steps_idx = 0
 one_episode=True
 while frame_idx < eval_steps  and one_episode:
@@ -529,7 +530,7 @@ while frame_idx < eval_steps  and one_episode:
 
             for i in range(0, num_envs):
                 if (done[i] == True):
-                    one_episode = False
+                   # one_episode = False
                     number_of_episodes += 1
                     if (reward[i] >= 0.2):
                         number_reached_goal += 1

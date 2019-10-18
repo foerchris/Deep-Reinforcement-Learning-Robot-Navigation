@@ -4,6 +4,7 @@
 import rospy
 import roslib
 import numpy as np
+from collections import deque  # Ordered collection with ends
 import math as m
 from geometry_msgs.msg import Point
 from geometry_msgs.msg import Twist
@@ -55,7 +56,16 @@ class image_converter():
         self.last_angular_velocity_y = 0
         self.last_nsecs = 0
         self.last_time = time.time()
-        self.array = []
+
+        self.mean_angl_vel_y = Memory(5)
+        self.mean_angl_vel_y.resetBuffer()
+
+        self.mean_flipper_front_angl_vel_y = Memory(5)
+        self.mean_flipper_front_angl_vel_y.resetBuffer()
+
+        self.mean_flipper_rear_angl_vel_y = Memory(5)
+        self.mean_flipper_rear_angl_vel_y.resetBuffer()
+        self.startStopRobotPub.publish(True)
 
     def stop(self):
         self.flipperVelFront = self.flipperPoseFront.current_pos
@@ -123,9 +133,13 @@ class image_converter():
 
     def flipperFrontPose(self, flipper_pose):
         self.flipperPoseFront = flipper_pose
+        self.mean_flipper_front_angl_vel_y.addPosition(flipper_pose.current_pos)
+
 
     def flipperRearPose(self, flipper_pose):
         self.flipperPoseRear = flipper_pose
+        self.mean_flipper_rear_angl_vel_y.addPosition(flipper_pose.current_pos)
+
 
 
     # callback to get the goal robot pose as position (x,y,z) and orientation as quaternion (x,y,z,w)
@@ -135,40 +149,50 @@ class image_converter():
     # callback to get the goal robot pose as position (x,y,z) and orientation as quaternion (x,y,z,w)
     def imuCallback(self, imu_data):
         self.imu_data = imu_data
+        #self.accelerations.append(abs(imu_data.))
 
-        deltaTime = time.time() - self.last_time
+        angularAccely = self.mean_angl_vel_y.addVelocity(imu_data.angular_velocity.y)
 
-        print("current value: " + str(imu_data.angular_velocity.y))
+        maxAngularAccel = 65
 
-        self.array.append(imu_data.angular_velocity.y)
-        print("min value: " + str(np.min(self.array)))
-        print("max value: " + str(np.max(self.array)))
-        if(abs(deltaTime - 0.023) < 0.02 ):
-          ##  print("deltaTime2: " + str(deltaTime))
+        if (angularAccely >= maxAngularAccel):
+            self.acceleration_to_high = angularAccely
+            self.accelZ = angularAccely
 
-            angularAccely = abs(self.imu_data.angular_velocity.y - self.last_angular_velocity_y)/deltaTime
-            maxAngularAccel = 65
-            #if(self.number ==1):
-              ##  print("angularAccely: " + str(angularAccely))
 
-            #    if(angularAccely> self.biggestangularAccelz):
-            #        print("self.imu_data.angular_velocity.y: " + str(self.imu_data.angular_velocity.y))
-            #        print("self.last_angular_velocity_y: " + str(self.last_angular_velocity_y))
+    def clcMean(self):
 
-            #        print("angularAccelz: " + str(angularAccely))
-             #       self.biggestangularAccelz = angularAccely
+        print(self.mean_angl_vel_y.getvelovitys())
+        meanAgnleVelY, meanAngleAccY = self.mean_angl_vel_y.totalMean()
 
-            if (angularAccely >= maxAngularAccel):
-             #   if(self.number == 1):
-             #       print("self.acceleration_to_high: " + str(angularAccely))
+        meanFlipperFrontAgnleVelY, meanFlipperFrontAgnleAccY = self.mean_flipper_front_angl_vel_y.totalMean()
 
-                self.acceleration_to_high = angularAccely
-                self.accelZ = angularAccely
+        meanFlipperRearAgnleVelY, meanFlipperRearAgnleAccY = self.mean_flipper_rear_angl_vel_y.totalMean()
 
-        self.last_time = time.time()
+        # print("meanLinVel = " + str(meanLinVel))
+        # print("meanAngVel = " + str(meanAngVel))
+        # print("meanLinAcc = " + str(meanLinAcc))
+        # print("meanAngAcc = " + str(meanAngAcc))
 
-        self.last_angular_velocity_y = self.imu_data.angular_velocity.y
-        self.last_nsecs = self.imu_data.header.stamp.nsecs
+        ##print("linearAccelerations max = " + str(np.max(self.linearAccelerations)))
+
+        file = open("Gazebo Script/messungen/flipper_acc_measures.txt", "w")
+        file.write("meanAgnleVelY = " + str(meanAgnleVelY) + "\n")
+        file.write("meanAngleAccY = " + str(meanAngleAccY) + "\n")
+
+        file.write("meanFlipperFrontAgnleVelY = " + str(meanFlipperFrontAgnleVelY) + "\n")
+        file.write("meanFlipperFrontAgnleAccY = " + str(meanFlipperFrontAgnleAccY) + "\n")
+
+        file.write("meanFlipperRearAgnleVelY = " + str(meanFlipperRearAgnleVelY) + "\n")
+        file.write("meanFlipperRearAgnleAccY = " + str(meanFlipperRearAgnleAccY) + "\n")
+
+        file.close()
+        #return meanLinVel, meanAngVel, meanLinAcc, meanAngAcc
+
+    def reset(self):
+        self.mean_angl_vel_y.resetBuffer()
+        self.mean_flipper_front_angl_vel_y.resetBuffer()
+        self.mean_flipper_rear_angl_vel_y.resetBuffer()
 
     # return the eleviation map image with [200,200] Pixel and saves it to a global variable
     def robotGroundMapCallback(self, map_data):
@@ -198,8 +222,8 @@ class image_converter():
     def main( self):
         '''Initializes and cleanup ros node'''
         #rospy.signal_shutdown("shut de fuck down")
-        print("rospy.init_node('GETjag_"+ str(self.number) +"_drl_gaz_robot_env_wrapper_worker')");
-        rospy.init_node('GETjag_'+ str(self.number) +'_drl_gaz_robot_env_wrapper_worker')
+        print("rospy.init_node('GETjag_"+ str(self.number) +"_drl_gaz_robot_env_wrapper_flipper_worker')");
+        rospy.init_node('GETjag_'+ str(self.number) +'_drl_gaz_robot_env_wrapper_flipper_worker')
 
         self.startStopRobotPub = rospy.Publisher("/GETjag" + str(self.number) + "/start_stop_robot", Bool, queue_size=10)
         #self.robotFlipperFrontPub = rospy.Publisher("/GETjag" + str(self.number) + "/flipper_front_controller/cmd_vel", Float64, queue_size=10)
@@ -220,3 +244,105 @@ class image_converter():
                                              self.imuCallback, queue_size=1)
     def shoutdown_node(self):
         rospy.signal_shutdown("because reasons")
+
+
+class Memory():
+    def __init__(self, size):
+        self.buffer = deque(maxlen=size)
+        self.size = size
+        self.counter = 1
+        self.returnMean = False
+        self.reset_buffer = False
+
+        self.lastPosition = 0
+        self.lastVel = 0
+        self.last_time = time.time()
+        self.velovitys = []
+        self.accelerations = []
+        self.accel = 0
+
+
+    def addVelocity(self, value):
+        if(self.reset_buffer):
+            self.resetBuffer()
+
+        self.buffer.append(value)
+        self.accel = 0
+        if (self.counter < self.size):
+            self.counter += 1
+        else:
+            self.returnMean = True
+            self.clcAccFromPose()
+        return self.accel
+
+    def addPosition(self, value):
+        if (self.reset_buffer):
+            self.resetBuffer()
+
+        self.buffer.append(value)
+        self.accel = 0
+        if (self.counter < self.size):
+            self.counter += 1
+        else:
+            self.returnMean = True
+            self.clcAccFromPose()
+        return self.accel
+
+
+    def resetBuffer(self):
+        self.counter = 0
+        self.returnMean = False
+        self.buffer = deque(maxlen=self.size)
+
+        self.lastPosition = 0
+        self.lastVel = 0
+        self.last_time = time.time()
+        self.velovitys = []
+        self.accelerations = []
+        self.reset_buffer = False
+
+    def clcAccFromPose(self):
+        positon = self.mean()
+        deltaTime = time.time() - self.last_time
+        #if (abs(deltaTime - 0.023) < 0.02):
+        vel = abs(positon - self.lastPosition) / deltaTime
+        self.velovitys.append(vel)
+        self.accel = abs(vel - self.lastVel) / deltaTime
+        self.accelerations.append(abs(self.accel))
+        self.lastPosition = positon
+        self.lastVel = vel
+        self.last_time = time.time()
+
+
+    def clcAccFromVel(self):
+        vel = self.mean()
+        self.velovitys.append(abs(vel))
+        deltaTime = time.time() - self.last_time
+        if (abs(deltaTime - 0.023) < 0.02):
+            self.accel = abs(vel - self.lastVel) / deltaTime
+            self.accelerations.append(abs(self.accel))
+
+        self.lastVel = vel
+        self.last_time = time.time()
+
+    def totalMean(self):
+        self.reset_buffer = True
+        return np.mean(self.velovitys), np.mean(self.accelerations)
+
+    def mean(self):
+        if self.returnMean:
+            return np.mean(self.buffer)
+        else:
+            return 0.02
+
+    def var(self):
+        if self.returnMean:
+            return np.var(self.buffer)
+        else:
+            return 0.02
+    def getvelovitys(self):
+        return self.velovitys
+
+    def returnNumpyArray(self):
+        return np.asarray(self.buffer)
+

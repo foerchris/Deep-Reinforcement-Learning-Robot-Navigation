@@ -40,8 +40,8 @@ class Agent():
         self.ac_model = ActorCritic(num_outputs, hidden_size).to(self.device)
 
         if(load_model):
-            self.feature_net.load_state_dict(torch.load(MODELPATH + '/save_ppo_feature_net.dat'))
-            self.ac_model.load_state_dict(torch.load(MODELPATH + '/save_ppo_ac_model.dat'))
+            self.feature_net.load_state_dict(torch.load(MODELPATH + '/save_ppo_feature_net_best_reward.dat'))
+            self.ac_model.load_state_dict(torch.load(MODELPATH + '/save_ppo_ac_model_best_reward.dat'))
         else:
             self.feature_net.apply(self.feature_net.init_weights)
             self.ac_model.apply(self.ac_model.init_weights)
@@ -80,18 +80,20 @@ class Agent():
 
         #lr = self.init_lr * (0.1**(epoch // self.lr_decay_epoch))
 
-        lr = self.init_lr - (self.init_lr - self.final_lr)*(1-math.exp(-epoch/self.lr_decay_epoch))
+        #lr = self.init_lr - (self.init_lr - self.final_lr)*(1-math.exp(-epoch/self.lr_decay_epoch))
         #print('learning rate' + str(lr))
         #if(lr>=1e-5):
         # lr=1e-5
        # print('learning rate: ' + str(lr))
         #self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lr)
-        self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lr)
+        #self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lr)
+
 
 
 
         # Normalize the advantages
         advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+
 
         for update in range(1 ,ppo_epochs +1 ):
             for  map_state, depth_state, goal_state, hidden_state_h, hidden_state_c, action, old_log_probs, return_, advantage, old_value in self.ppo_iter(map_states, depth_states, goal_states, hidden_states_h, hidden_states_c, actions, log_probs,
@@ -100,12 +102,12 @@ class Agent():
                 hidden_state_h = hidden_state_h.view(self.lstm_layers, -1, hidden_state_h.shape[2])
                 hidden_state_c = hidden_state_c.view(self.lstm_layers, -1, hidden_state_c.shape[2])
 
-                ##frac = 1.0 - (update -1.0) / ppo_epochs
+                frac = 1.0 - (update -1.0) / ppo_epochs
 
-                ##lrnow = self.init_lr * frac
+                lrnow = self.init_lr * frac
                # print('lrnow' + str(lrnow))
 
-                #self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lrnow)
+                self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lrnow)
 
                 features, _, _ = self.feature_net(map_state, depth_state, goal_state, hidden_state_h, hidden_state_c)
                 dist, value, _ = self.ac_model(features)

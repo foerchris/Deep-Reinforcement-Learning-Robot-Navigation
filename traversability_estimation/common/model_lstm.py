@@ -197,29 +197,21 @@ class ActorCritic(nn.Module):
 
         out = (out - out.mean()) / (out.std() + 1e-8)
 
-        print("out", out.shape)
 
         out = out.view(-1, self.hidden_dim*2)
 
         value = self.critic(out)
 
 
-        print("value", value.shape)
-
         value = value.view(1, -1, self.hidden_dim)
 
         critic_hidden = (critic_hidden_h, critic_hidden_c)
 
-        print("critic_hidden_h", critic_hidden[0].shape)
-        print("critic_hidden_c", critic_hidden[1].shape)
-        print("value", value.shape)
 
         value, critic_hidden = self.critic_lstm(value, critic_hidden)
         #lstm_out, self.hidden = self.lstm(map_goal_depth, self.hidden)
 
-        print("critic_hidden_h", critic_hidden[0].shape)
-        print("critic_hidden_c", critic_hidden[1].shape)
-        print("value", value.shape)
+
 
         value = value.view(-1, value.shape[2])
 

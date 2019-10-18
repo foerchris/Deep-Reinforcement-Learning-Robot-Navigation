@@ -189,11 +189,11 @@ class ActorCritic(nn.Module):
             nn.Tanh()
         )
 
-        self.var = nn.Sequential(
-            nn.Linear(hidden_size, hidden_size),
-            nn.Linear(hidden_size, num_outputs),
-            nn.Softplus()
-        )
+      #  self.var = nn.Sequential(
+      #      nn.Linear(hidden_size, hidden_size),
+      #      nn.Linear(hidden_size, num_outputs),
+      #      nn.Softplus()
+      #  )
 
         self.log_std = nn.Parameter(torch.ones(1, num_outputs) * std)
 
@@ -240,7 +240,7 @@ class ActorCritic(nn.Module):
 
 
         std = self.log_std.exp().expand_as(mu)
-       # var = self.var(lstm_out)
+        #var = self.var(lstm_out)
        # std = torch.sqrt(var).data.cpu().numpy()
         #std = torch.sqrt(var).data
         #print('mu' + str(mu))

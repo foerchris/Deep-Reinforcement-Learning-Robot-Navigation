@@ -177,8 +177,10 @@ class robotEnv():
        # plt.imshow(eleviationData,cmap="gray")
        # plt.show()
 
-       # print(eleviationData[0].shape)
-        #print(eleviationData[1].shape)
+       # eleviationData[0] = np.add(eleviationData[0],0.2)
+       # eleviationData = np.multiply(eleviationData[0],eleviationData[1])
+        #eleviationData = eleviationData[0]
+
 
        # eleviationData = eleviationData[0]
         # print("eleviationData.shape: " +str(eleviationData.shape))
@@ -352,8 +354,8 @@ class robotEnv():
             self.closestDistance = currentdistance
 
                # if(self.number ==1):
-        #if exploredNewArea: #and not self.newRewards:
-           # reward += 0.03
+     #   if exploredNewArea: #and not self.newRewards:
+      #      reward += 0.06
             #if(self.number == 1):
                # print("exploredNewArea, reward: " + str(reward))
         # if(self.number ==1):
@@ -399,6 +401,7 @@ class robotEnv():
         if self.ic.reach_the_goal:
             ##reward = 100
             #reward = 0.5 + (self.startGoalDistance * 5 / self.stepCounter)
+
             reward = 0.5  + (self.startGoalDistance * 3 / self.stepCounter)
 
             print( float(self.stepCounter)/ float(self.EpisodeLength))
