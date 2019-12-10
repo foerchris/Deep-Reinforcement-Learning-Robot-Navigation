@@ -39,7 +39,7 @@ from agents import Agent
 
 MODELPATH = os.path.join(dirname, 'train_getjag/ppo/Model')
 
-load_model = False
+load_model = True
 last_number_of_frames = 0
 
 frame_idx  = 0 + last_number_of_frames
@@ -146,7 +146,7 @@ def plot(frame_idx, rewards):
 
 #Hyper params:
 hidden_size      = 576*2 #576*2
-lstm_layers      = 1
+lstm_layers      = 2
 
 lr               = 3e-4 #1e-3 # 3e-4
 lr_decay_epoch   = 100.0
@@ -208,9 +208,9 @@ for i in range(0, num_envs):
 envs.set_episode_length(episode_length)
 
 
-early_stop = False
+early_stop = True
 
-best_reward = 3
+best_reward = 0
 
 map_state,depth_state, goal_state = envs.reset()
 
@@ -494,7 +494,7 @@ for i in range(0, num_envs):
 agent.feature_net.eval()
 agent.ac_model.eval()
 frame_idx = 0
-eval_steps = 10000
+eval_steps = 16666
 steps_idx = 0
 one_episode=True
 while frame_idx < eval_steps  and one_episode:
@@ -528,7 +528,7 @@ while frame_idx < eval_steps  and one_episode:
 
             for i in range(0, num_envs):
                 if (done[i] == True):
-                   # one_episode = False
+                    one_episode = True
                     number_of_episodes += 1
                     if (reward[i] >= 0.2):
                         number_reached_goal += 1
@@ -545,7 +545,7 @@ while frame_idx < eval_steps  and one_episode:
 
                     for layer in range(0,lstm_layers):
                         next_hidden_state_h[layer][i] = single_hidden_state_h[layer][0].detach()
-                        next_hidden_state_c[layer][i] = next_hidden_state_c[layer][0].detach()
+                        next_hidden_state_c[layer][i] = single_hidden_state_c[layer][0].detach()
 
 
             next_map_state, stacked_map_frames = stack_frames(stacked_map_frames,next_map_state,stack_size, False)

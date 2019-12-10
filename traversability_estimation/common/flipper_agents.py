@@ -42,8 +42,8 @@ class Agent():
         self.frameinfo = getframeinfo(currentframe())
 
         if(load_model):
-            self.feature_net.load_state_dict(torch.load(MODELPATH + '/save_ppo_feature_net.dat'))
-            self.ac_model.load_state_dict(torch.load(MODELPATH + '/save_ppo_ac_model.dat'))
+            self.feature_net.load_state_dict(torch.load(MODELPATH + '/save_ppo_feature_net_best_reward.dat'))
+            self.ac_model.load_state_dict(torch.load(MODELPATH + '/save_ppo_ac_model_best_reward.dat'))
         else:
             self.feature_net.apply(self.feature_net.init_weights)
             self.ac_model.apply(self.ac_model.init_weights)

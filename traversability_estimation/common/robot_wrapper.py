@@ -51,10 +51,11 @@ class image_converter():
         self.deltaDist = 1
         self.reach_the_goal = False
 
-        self.mean_lin_vel = Memory(5)
-        self.mean_angl_vel = Memory(5)
+        self.mean_lin_vel = Memory(2)
+        self.mean_angl_vel = Memory(2)
         self.mean_lin_vel.resetBuffer()
         self.mean_angl_vel.resetBuffer()
+
     def stop(self):
         self.velocities.linear.x = 0
         self.velocities.angular.z = 0
@@ -62,8 +63,8 @@ class image_converter():
     def setAction(self, action):
 
         action[0] += 1.0
-        action[0] = action[0] / 2
-        action[1] = action[1] * 3
+        action[0] = action[0]
+        action[1] = action[1]
 
         if(action[0] >= 1.0):
             action[0] = 1.0
@@ -71,7 +72,7 @@ class image_converter():
             action[0] = 0.1
        # elif(action[0] <= 0.05):
         #    action[0] = 0.05
-        action[1] = action[1]*3
+        action[1] = action[1]
         if (action[1] >= 1.0):
             action[1] = 1.0
         elif (action[1] <= -1.0):
@@ -85,10 +86,10 @@ class image_converter():
 
     # callback to get the current robot pose as position (x,y,z) and orientation as quaternion (x,y,z,w)
     # also transmits the robot action as velocities
-    def robotCallback(self,odom_data):
-        self.currentPose = odom_data
+   # def robotCallback(self,odom_data):
+    #    self.currentPose = odom_data
 
-        self.robotMovementPub.publish( self.velocities)
+       # self.robotMovementPub.publish( self.velocities)
        # self.countPub +=1
        # if self.countPub % 1000 == 0:
          #   self.countPub = 0
@@ -98,20 +99,30 @@ class image_converter():
         meanLinVel, meanLinAcc = self.mean_lin_vel.totalMean()
         meanAngVel, meanAngAcc = self.mean_angl_vel.totalMean()
 
-        file = open("Gazebo Script/measures.txt", "w")
-        file.write("meanLinVel = " + str(meanLinVel) + "\n")
-        file.write("meanAngVel = " + str(meanAngVel) + "\n")
-        file.write("meanLinAcc = " + str(meanLinAcc) + "\n")
-        file.write("meanAngAcc = " + str(meanAngAcc) + "\n")
+        #print("meanLinVel = " + str(meanLinVel) + "\n")
+        #print("meanAngVel = " + str(meanAngVel) + "\n")
+        #print("meanLinAcc = " + str(meanLinAcc) + "\n")
+        #print("meanAngAcc = " + str(meanAngAcc) + "\n")
 
-        file.close()
+       # file = open("Gazebo Script/measures.txt", "w")
+       # file.write("meanLinVel = " + str(meanLinVel) + "\n")
+       # file.write("meanAngVel = " + str(meanAngVel) + "\n")
+       # file.write("meanLinAcc = " + str(meanLinAcc) + "\n")
+       # file.write("meanAngAcc = " + str(meanAngAcc) + "\n")
+
+        #file.close()
         return meanLinVel, meanAngVel, meanLinAcc, meanAngAcc
 
     def robotPoseCallback(self,odom_data):
         self.currentRobotPose = odom_data
+        print(self.velocities)
+        self.robotMovementPub.publish( self.velocities)
 
-        self.mean_lin_vel.add(odom_data.twist.twist.linear.x)
-        self.mean_angl_vel.add(odom_data.twist.twist.angular.z)
+        #print("odom_data.twist.twist.linear.x = " + str(odom_data.twist.twist.linear.x) + "\n")
+        #print("odom_data.twist.twist.angular.z = " + str(odom_data.twist.twist.angular.z) + "\n")
+
+        self.mean_lin_vel.addVelocity(odom_data.twist.twist.linear.x)
+        self.mean_angl_vel.addVelocity(odom_data.twist.twist.angular.z)
 
     # callback to get the goal robot pose as position (x,y,z) and orientation as quaternion (x,y,z,w)
     def goalCallback(self,odom_data):
@@ -162,7 +173,7 @@ class image_converter():
 
 
     def returnData(self):
-        return self.depthImage, self.eleviationImage, self.currentPose, self.goalPose
+        return self.depthImage, self.eleviationImage, self.currentRobotPose, self.goalPose
 
     def main( self):
         '''Initializes and cleanup ros node'''
@@ -170,7 +181,7 @@ class image_converter():
         print("rospy.init_node('GETjag_"+ str(self.number) +"_drl_gaz_robot_env_wrapper_worker')");
         rospy.init_node('GETjag_'+ str(self.number) +'_drl_gaz_robot_env_wrapper_worker')
         self.robotMovementPub = rospy.Publisher("/GETjag" + str(self.number) + "/cmd_vel", Twist, queue_size=10)
-        self.robotPoseSub = rospy.Subscriber("GETjag" + str(self.number) + "/odom", Odometry, self.robotCallback)
+        #self.robotPoseSub = rospy.Subscriber("GETjag" + str(self.number) + "/odom", Odometry, self.robotCallback)
         self.currentRobotPoseSub = rospy.Subscriber("GETjag" + str(self.number) + "/current_pose", Odometry, self.robotPoseCallback)
 
         self.goalPoseSub = rospy.Subscriber("/GETjag" + str(self.number) + "/goal_pose", Odometry, self.goalCallback)
@@ -193,41 +204,73 @@ class Memory():
         self.returnMean = False
         self.reset_buffer = False
 
+        self.lastPosition = 0
         self.lastVel = 0
         self.last_time = time.time()
         self.velovitys = []
         self.accelerations = []
+        self.accel = 0
 
-    def add(self, value):
+
+    def addVelocity(self, value):
         if(self.reset_buffer):
             self.resetBuffer()
 
         self.buffer.append(value)
+        self.accel = 0
         if (self.counter < self.size):
             self.counter += 1
         else:
             self.returnMean = True
-            self.clcAcc()
+            self.clcAccFromVel()
+        return self.accel
+
+    def addPosition(self, value):
+        if (self.reset_buffer):
+            self.resetBuffer()
+
+        self.buffer.append(value)
+        self.accel = 0
+        if (self.counter < self.size):
+            self.counter += 1
+        else:
+            self.returnMean = True
+            self.clcAccFromPose()
+        return self.accel
+
 
     def resetBuffer(self):
         self.counter = 0
         self.returnMean = False
         self.buffer = deque(maxlen=self.size)
 
+        self.lastPosition = 0
         self.lastVel = 0
         self.last_time = time.time()
         self.velovitys = []
         self.accelerations = []
         self.reset_buffer = False
 
+    def clcAccFromPose(self):
+        positon = self.mean()
+        deltaTime = time.time() - self.last_time
+        #if (abs(deltaTime - 0.023) < 0.02):
+        vel = abs(positon - self.lastPosition) / deltaTime
+        self.velovitys.append(vel)
+        self.accel = abs(vel - self.lastVel) / deltaTime
+        self.accelerations.append(abs(self.accel))
+        self.lastPosition = positon
+        self.lastVel = vel
+        self.last_time = time.time()
 
-    def clcAcc(self):
+
+    def clcAccFromVel(self):
         vel = self.mean()
         self.velovitys.append(abs(vel))
         deltaTime = time.time() - self.last_time
         if (abs(deltaTime - 0.023) < 0.02):
-            accel = abs(vel - self.lastVel) / deltaTime
-            self.accelerations.append(abs(accel))
+            self.accel = abs(vel - self.lastVel) / deltaTime
+            self.accelerations.append(abs(self.accel))
 
         self.lastVel = vel
         self.last_time = time.time()
@@ -247,6 +290,8 @@ class Memory():
             return np.var(self.buffer)
         else:
             return 0.02
+    def getvelovitys(self):
+        return self.velovitys
 
     def returnNumpyArray(self):
         return np.asarray(self.buffer)

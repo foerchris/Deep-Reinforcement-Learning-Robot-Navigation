@@ -71,14 +71,14 @@ class image_converter():
         self.flipperVelFront = self.flipperPoseFront.current_pos
         self.flipperVelRear = self.flipperPoseRear.current_pos
 
-       # self.flipperVelFront =0
-       # self.flipperVelRear = 0
+        #self.flipperVelFront =0
+        #self.flipperVelRear = 0
 
     def setAction(self, action):
         bound = 1.22
 
-       # frontPose = self.flipperPoseFront.current_pos
-       # rearPose = self.flipperPoseRear.current_pos
+        frontPose = self.flipperPoseFront.current_pos
+        rearPose = self.flipperPoseRear.current_pos
 
         #if(self.number == 1):
         #    print("action[0]" + str(action[0]))
@@ -86,28 +86,21 @@ class image_converter():
          #   print("frontPose" + str(frontPose))
           #  print("rearPose" + str(rearPose))
 
+       # if(frontPose >= bound and action[0]>0):
+       #      action[0] = -action[0]
+       # elif(frontPose <= -bound and action[0]<0):
+       #      action[0] = -action[0]
 
-        #
-        # if(rearPose >= bound and action[0]>0):
-        #     action[0] = -abs(action[0])
-        # elif(rearPose  <= -bound and action[0]<0):
-        #     action[0] = abs(action[0])
-        #
-        # if (frontPose  >= bound and action[1]>0):
-        #     action[1] = -abs(action[1])
-        # elif (frontPose <= -bound and action[1]<0):
-        #     action[1] = abs(action[1])
-        #
-        # if(self.number == 1):
-        #     print("action[0]" + str(action[0]))
-        #     print("action[1]" + str(action[1]))
-
+#        if (rearPose >= bound and action[1]>0):
+ #            action[1] = -action[1]
+  #      elif (rearPose <= -bound and action[1]<0):
+   #          action[1] = -action[1]
 
         self.flipperVelFront = action[0]*(math.pi/2)
         self.flipperVelRear = action[1]*(math.pi/2)
 
-        #self.flipperVelFront = action[0]
-        #self.flipperVelRear = action[1]
+       # self.flipperVelFront = action[0]
+       # self.flipperVelRear = action[1]
 
 
     # callback to get the current robot pose as position (x,y,z) and orientation as quaternion (x,y,z,w)
@@ -119,9 +112,9 @@ class image_converter():
         #    self.flipperVelFront = 0
         #    self.flipperVelRear = 0
 
-        self.startStopRobotPub.publish( self.startStopRobot)
-       # self.robotFlipperFrontPub.publish( self.flipperVelFront)
-       # self.robotFlipperRearPub.publish( self.flipperVelRear)
+      #  self.startStopRobotPub.publish( self.startStopRobot)
+        self.robotFlipperFrontPub.publish( self.flipperVelFront)
+        self.robotFlipperRearPub.publish( self.flipperVelRear)
 
         roll, pitch, yaw = self.returnRollPitchYaw(self.currentPose.pose.pose.orientation)
 
@@ -226,8 +219,8 @@ class image_converter():
         rospy.init_node('GETjag_'+ str(self.number) +'_drl_gaz_robot_env_wrapper_flipper_worker')
 
         self.startStopRobotPub = rospy.Publisher("/GETjag" + str(self.number) + "/start_stop_robot", Bool, queue_size=10)
-        #self.robotFlipperFrontPub = rospy.Publisher("/GETjag" + str(self.number) + "/flipper_front_controller/cmd_vel", Float64, queue_size=10)
-        #self.robotFlipperRearPub = rospy.Publisher("/GETjag" + str(self.number) + "/flipper_rear_controller/cmd_vel", Float64, queue_size=10)
+       # self.robotFlipperFrontPub = rospy.Publisher("/GETjag" + str(self.number) + "/flipper_front_controller/cmd_vel", Float64, queue_size=10)
+       # self.robotFlipperRearPub = rospy.Publisher("/GETjag" + str(self.number) + "/flipper_rear_controller/cmd_vel", Float64, queue_size=10)
 
         self.robotFlipperFrontPub = rospy.Publisher("GETjag" + str(self.number) + "/flipper_front_controller/command", Float64, queue_size=10)
         self.robotFlipperRearPub = rospy.Publisher("GETjag" + str(self.number) + "/flipper_rear_controller/command", Float64, queue_size=10)
@@ -272,7 +265,7 @@ class Memory():
             self.counter += 1
         else:
             self.returnMean = True
-            self.clcAccFromPose()
+            self.clcAccFromVel()
         return self.accel
 
     def addPosition(self, value):

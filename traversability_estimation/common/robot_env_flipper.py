@@ -76,7 +76,7 @@ class robotEnv():
 
         html = '<html><body><p>Hi, Your programm has stop pleas start it again!</p></body></html>'
         part2 = MIMEText(html, 'html')
-        self.currentRobotSpeed = rospy.get_param("/GETjag"+ str(self.number) + "/current_robot_speed")
+        #self.currentRobotSpeed = rospy.get_param("/GETjag"+ str(self.number) + "/current_robot_speed")
         self.msg.attach(part2)
         self.stepCounter =0
 
@@ -231,7 +231,7 @@ class robotEnv():
 
         if (self.stepCounter == 1):
             self.closestDistance = currentdistance
-            self.currentRobotSpeed = rospy.get_param("/GETjag"+ str(self.number) + "/current_robot_speed")
+         #   self.currentRobotSpeed = rospy.get_param("/GETjag"+ str(self.number) + "/current_robot_speed")
 
         EndEpisode = False;
         reward=0
@@ -276,7 +276,7 @@ class robotEnv():
             EndEpisode = True
 
         if currentdistance <= self.deltaDist:
-            print(self.currentRobotSpeed)
+            #print(self.currentRobotSpeed)
             print(self.startGoalDistance)
             print(float(self.stepCounter))
 

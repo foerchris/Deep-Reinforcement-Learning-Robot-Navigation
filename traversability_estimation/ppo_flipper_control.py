@@ -494,9 +494,9 @@ while frame_idx < eval_steps and one_eps:
 
 
             action = dist.mean.detach()
-            print("action" + str(action))
+            #print("action" + str(action))
             action = dist.mean.detach()
-            print("action" + str(action))
+            #print("action" + str(action))
 
             # this is a x,1 tensor is kontains alle the possible actions
             # the cpu command move it from a gpu tensor to a cpu tensor
@@ -504,7 +504,7 @@ while frame_idx < eval_steps and one_eps:
 
             print(angl_acc)
             total_angluar_acc.append(np.mean(angl_acc))
-
+            print(total_angluar_acc)
 
             for i in range(0, num_envs):
                 if (done[i] == True):
@@ -585,7 +585,8 @@ mean_stucked = np.mean(stucked)
 stucked = []
 
 
-total_angluar_acc = np.mean(total_angluar_acc)
+mean_total_angluar_acc = np.mean(total_angluar_acc)
+total_angluar_acc = []
 
 test_rewards.append(mean_test_rewards)
 print("save tensorboard")
@@ -621,8 +622,7 @@ writer.add_scalar('Mittelwert/anzahl Ziel erreich', float(number_reached_goal), 
 
 writer.add_scalar('Mittelwert/Verähltniss Umgekippt', float(mean_flipp_over), frame_idx)
 writer.add_scalar('Mittelwert/Verähltniss Stucked', float(mean_stucked), frame_idx)
-writer.add_scalar('Mittelwert/Mittelwert Winkelbeschleunigung', float(total_angluar_acc), frame_idx)
+writer.add_scalar('Mittelwert/Mittelwert Winkelbeschleunigung', float(mean_total_angluar_acc), frame_idx)
 
-total_angluar_acc = []
 
 #writer.add_summary(summary, frame_idx)

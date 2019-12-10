@@ -48,7 +48,7 @@ class robotEnv():
         self.episodeFinished = False
         # Variables to calculate the reward
         self.deltaDist = 0.20
-        self.discountFactorMue = 0.2
+        self.discountFactorMue = 0.1
         self.closestDistance = 0
         self.startGoalDistance = 0
         self.lastDistance = 0
@@ -170,8 +170,8 @@ class robotEnv():
         #plt.show()
         #plt.imshow(eleviationData[1],cmap="gray")
         #plt.show()
-        eleviationData[0] = np.add(eleviationData[0],0.2)
-        eleviationData = np.multiply(eleviationData[0],eleviationData[1])
+        #eleviationData[0] = np.add(eleviationData[0],0.2)
+        #eleviationData = np.multiply(eleviationData[0],eleviationData[1])
         #plt.imshow(eleviationData,cmap="gray")
         #plt.show()
        # plt.imshow(eleviationData,cmap="gray")
@@ -179,7 +179,7 @@ class robotEnv():
 
        # eleviationData[0] = np.add(eleviationData[0],0.2)
        # eleviationData = np.multiply(eleviationData[0],eleviationData[1])
-        #eleviationData = eleviationData[0]
+        eleviationData = eleviationData[0]
 
 
        # eleviationData = eleviationData[0]
@@ -286,6 +286,9 @@ class robotEnv():
     def clcReward(self):
         depthImage, eleviationImage, self.currentPose, self.goalPose = self.ic.returnData()
         roll, pitch, yaw = self.returnRollPitchYaw(self.currentPose.pose.pose.orientation)
+        if(self.number==1):
+            print("roll" + str(abs(roll)))
+            print("abs(pitch)" + str(abs(pitch)))
 
         currentX = self.ic.currentRobotPose.pose.pose.position.x
         currentY = self.ic.currentRobotPose.pose.pose.position.y
@@ -318,6 +321,8 @@ class robotEnv():
         self.delta_x_memory.add(self.currentPose.pose.pose.position.x)
         self.delta_y_memory.add(self.currentPose.pose.pose.position.y)
 
+        if(self.number==1):
+            print("abs(currenVel)" + str(abs(currenVel)))
         self.delta_vel_memory.add(abs(currenVel))
 
         var_delta_x = self.delta_x_memory.var();
@@ -340,8 +345,8 @@ class robotEnv():
         if currentdistance < self.closestDistance: #and self.newRewards:
 
             reward = self.discountFactorMue * (self.closestDistance - currentdistance)
-            if(self.number ==1):
-                print("reward: " + str(reward))
+            #if(self.number ==1):
+                #print("reward: " + str(reward))
 
             #print("currentdistance < self.closestDistance, reward number" + str(self.number) +": " + str(reward))
 
@@ -402,7 +407,7 @@ class robotEnv():
             ##reward = 100
             #reward = 0.5 + (self.startGoalDistance * 5 / self.stepCounter)
 
-            reward = 0.5  + (self.startGoalDistance * 3 / self.stepCounter)
+            reward = 0.5  + (self.startGoalDistance * 10 / self.stepCounter)
 
             print( float(self.stepCounter)/ float(self.EpisodeLength))
             #if(self.stepCounter==400):
