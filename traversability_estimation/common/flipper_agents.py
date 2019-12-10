@@ -33,7 +33,6 @@ class Agent():
         use_cuda = torch.cuda.is_available()
         self.device   = torch.device("cuda" if use_cuda else "cpu")
         torch.cuda.empty_cache()
-        #self.summary_writer = tf.summary.FileWriter("train_getjag/ppo_flipper/Tensorboard")
         self.writer = writer
 
         self.feature_net = FeatureNetwork(state_size_map*stack_size, state_size_orientation * stack_size , hidden_size, stack_size).to(self.device)
@@ -64,10 +63,8 @@ class Agent():
 
     def ppo_iter(self, map_states, orientation_states, hidden_states_h, hidden_states_c, actions, log_probs, returns, advantage, value):
         batch_size = map_states.size(0)
-        #print('map_states.shape' + str(map_states.shape))
         for _ in range(batch_size // self.mini_batch_size):
             rand_ids = np.random.randint(0, batch_size-self.worker_number, self.mini_batch_size)
-            #print('map_states[rand_ids, :].shape' + str(map_states[rand_ids, :].shape))
             yield map_states[rand_ids, :], orientation_states[rand_ids, :], hidden_states_h[rand_ids, :], hidden_states_c[rand_ids, :], map_states[rand_ids+self.worker_number, :], orientation_states[rand_ids+self.worker_number, :], hidden_states_h[rand_ids+self.worker_number, :], hidden_states_c[rand_ids+self.worker_number, :], actions[rand_ids, :], log_probs[rand_ids, :], returns[rand_ids, :], advantage[rand_ids, :], value[rand_ids, :]
 
 
@@ -80,13 +77,8 @@ class Agent():
         sum_entropy = 0.0
         sum_loss_total = 0.0
 
-        #lr = self.init_lr * (0.1**(epoch // self.lr_decay_epoch))
 
         lr = self.init_lr - (self.init_lr - self.final_lr)*(1-math.exp(-epoch/self.lr_decay_epoch))
-        print('learning rate' + str(lr))
-        #if(lr>=1e-5):
-        # lr=1e-5
-       # print('learning rate: ' + str(lr))
         self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lr)
 
 
@@ -103,10 +95,6 @@ class Agent():
 
                 hidden_state_h = hidden_state_h.view(1, -1, hidden_state_h.shape[2])
                 hidden_state_c = hidden_state_c.view(1, -1, hidden_state_c.shape[2])
-
-                next_hidden_state_h = next_hidden_state_h.view(1, -1, next_hidden_state_h.shape[2])
-                next_hidden_state_c = next_hidden_state_c.view(1, -1, next_hidden_state_c.shape[2])
-
 
                 features, _, _ = self.feature_net(map_state, orientation_state, hidden_state_h, hidden_state_c)
                 dist, value, _ = self.ac_model(features)
@@ -135,7 +123,6 @@ class Agent():
                 critic_loss =  .5 * (-torch.min(vf_losses1, vf_losses2).mean())
 
                 loss = discount * critic_loss + actor_loss - beta * entropy
-                #print('loss' + str(loss))
 
                 self.optimizer.zero_grad()
                 loss.backward()

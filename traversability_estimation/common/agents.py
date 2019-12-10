@@ -33,7 +33,6 @@ class Agent():
         self.device   = torch.device("cuda" if use_cuda else "cpu")
         torch.cuda.empty_cache()
 
-       # self.summary_writer = tf.summary.FileWriter("train_getjag/ppo/Tensorboard")
         self.writer = writer
 
         self.feature_net = FeatureNetwork(state_size_map*stack_size, state_size_depth * stack_size, state_size_goal * stack_size, hidden_size, stack_size, lstm_layers).to(self.device)
@@ -45,7 +44,6 @@ class Agent():
         else:
             self.feature_net.apply(self.feature_net.init_weights)
             self.ac_model.apply(self.ac_model.init_weights)
-        #self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=learning_rate)
         self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=learning_rate)
 
 
@@ -78,17 +76,6 @@ class Agent():
         sum_entropy = 0.0
         sum_loss_total = 0.0
 
-        #lr = self.init_lr * (0.1**(epoch // self.lr_decay_epoch))
-
-        #lr = self.init_lr - (self.init_lr - self.final_lr)*(1-math.exp(-epoch/self.lr_decay_epoch))
-        #print('learning rate' + str(lr))
-        #if(lr>=1e-5):
-        # lr=1e-5
-       # print('learning rate: ' + str(lr))
-        #self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lr)
-
-
-
         # Normalize the advantages
         advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
@@ -107,7 +94,6 @@ class Agent():
                                             lr=lrnow)
 
                 lrnow = self.init_lr * frac
-                print('lrnow' + str(lrnow))
 
                 self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lrnow)
 
@@ -148,8 +134,6 @@ class Agent():
 
                 nn.utils.clip_grad_norm_(self.ac_model.parameters(),max_grad_norm)
 
-                #for p in model.parameters():
-                    #p.data.add_(-lr, p.grad.data)
                 self.optimizer.step()
 
                 # track statistics
