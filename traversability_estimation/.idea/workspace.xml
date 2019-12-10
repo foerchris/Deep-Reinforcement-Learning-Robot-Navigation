@@ -1,88 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="006d84f8-4341-4757-8cb1-e35d54703074" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/clc_flipper_acc_y.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/A3C-Doom.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DDDQN.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/drl1.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/drl1_random.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/drl2.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/drl2_random.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/drl4.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/drl5.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/drl5Test.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/drl5_random.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/drl6.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/drlEnv.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/drlFlipper1.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/drlFlipper2.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/drlFlipper3.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/drlFlipper5.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/script.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/sim1GETjag.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/sim2GETjag.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/sim3GETjag.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/sim4GETjag.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/sim5GETjag.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/sim6GETjag.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/simFlipper0GETjag.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/simFlipper1GETjag.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/simFlipper2GETjag.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/simFlipper3GETjag.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/simFlipper4GETjag.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gazebo Script/simFlipper5GETjag.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/_vizdoom.ini" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/a3c_roboter_navigation2.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/a3c_roboter_navigation_local.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/bla.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/agents_icm.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/agents_lstm.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/agents_rnd.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/flipper_agents.py" beforeDir="false" afterPath="$PROJECT_DIR$/common/flipper_agents.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/flipper_agents_nomap.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/flipper_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/common/flipper_model.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/flipper_model_nomap.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/common/model.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/model_icm.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/model_lstm.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/model_old.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/model_rnd.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/robot_env.py" beforeDir="false" afterPath="$PROJECT_DIR$/common/robot_env.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/robot_env_flipper.py" beforeDir="false" afterPath="$PROJECT_DIR$/common/robot_env_flipper.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/robot_env_flipper_BACKUP_10909.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/robot_env_flipper_BASE_10909.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/robot_env_flipper_LOCAL_10909.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/robot_env_flipper_REMOTE_10909.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/robot_env_flipper_nomap.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/robot_wrapper.py" beforeDir="false" afterPath="$PROJECT_DIR$/common/robot_wrapper.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/robot_wrapper_flipper.py" beforeDir="false" afterPath="$PROJECT_DIR$/common/robot_wrapper_flipper.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/robot_wrapper_flipper_nomap.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dd_DQL_robot_navigation_fixed_memory.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dd_DQL_robot_navigation_lstm.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/evaluSkript02.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/helper.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ppo_flipper_control.py" beforeDir="false" afterPath="$PROJECT_DIR$/ppo_flipper_control.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ppo_flipper_control_nomap.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ppo_network_test.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ppo_robot_navigation.py" beforeDir="false" afterPath="$PROJECT_DIR$/ppo_robot_navigation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ppo_robot_navigation_icm.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ppo_robot_navigation_icm_old.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ppo_robot_navigation_lstm.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ppo_robot_navigation_rnd.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/robotEnvWrapper.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/robotEnvWrapper_local.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/start_drl_agent.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test2.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test3.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test4.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test5.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test6.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test7.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/wichteln.py" beforeDir="false" />
-    </list>
+    <list default="true" id="006d84f8-4341-4757-8cb1-e35d54703074" name="Default Changelist" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -448,6 +367,17 @@
               <item name="" type="442cc68d:ScopeViewTreeModel$RootNode" />
               <item name="common" type="9f88c78c:ScopeViewTreeModel$FileNode" />
             </path>
+            <path>
+              <item name="traversability_estimation" type="3d21c010:ScopeViewTreeModel$ProjectNode" />
+              <item name="" type="442cc68d:ScopeViewTreeModel$RootNode" />
+              <item name="train_getjag" type="9f88c78c:ScopeViewTreeModel$FileNode" />
+            </path>
+            <path>
+              <item name="traversability_estimation" type="3d21c010:ScopeViewTreeModel$ProjectNode" />
+              <item name="" type="442cc68d:ScopeViewTreeModel$RootNode" />
+              <item name="train_getjag" type="9f88c78c:ScopeViewTreeModel$FileNode" />
+              <item name="ppo" type="9f88c78c:ScopeViewTreeModel$FileNode" />
+            </path>
           </expand>
           <select />
         </subPane>
@@ -637,13 +567,12 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-4" y="25" width="2568" height="1393" extended-state="6" />
-    <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.16673236" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.16673236" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
-      <window_info active="true" anchor="bottom" id="Find" order="1" visible="true" weight="0.32858273" />
+      <window_info anchor="bottom" id="Find" order="1" visible="true" weight="0.32858273" />
       <window_info active="true" anchor="bottom" id="Run" order="2" sideWeight="0.49743792" visible="true" weight="0.3889503" />
       <window_info anchor="bottom" id="Debug" order="3" sideWeight="0.49822626" weight="0.44338876" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
