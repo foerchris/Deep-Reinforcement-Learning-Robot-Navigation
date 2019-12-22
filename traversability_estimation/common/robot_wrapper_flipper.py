@@ -67,6 +67,9 @@ class image_converter():
         self.mean_flipper_rear_angl_vel_y.resetBuffer()
         self.startStopRobotPub.publish(True)
 
+    '''
+    stop all robots
+    '''
     def stop(self):
         #self.flipperVelFront = self.flipperPoseFront.current_pos
         #self.flipperVelRear = self.flipperPoseRear.current_pos
@@ -74,6 +77,10 @@ class image_converter():
         self.flipperVelFront =0
         self.flipperVelRear = 0
 
+    '''
+    set the action which should executed
+    @ param action
+    '''
     def setAction(self, action):
         bound = 1.22
 
@@ -98,8 +105,10 @@ class image_converter():
         self.flipperVelRear = action[1]
 
 
-    # callback to get the current robot pose as position (x,y,z) and orientation as quaternion (x,y,z,w)
-    # also transmits the robot action as velocities
+    '''
+    get current robot pose
+    @ param odom_data
+    '''
     def robotCallback(self,odom_data):
         self.currentPose = odom_data
 
@@ -108,28 +117,38 @@ class image_converter():
 
         roll, pitch, yaw = self.returnRollPitchYaw(self.currentPose.pose.pose.orientation)
 
-
-
-
         if roll>=self.tip_over_angle or roll<=-self.tip_over_angle or pitch>=self.tip_over_angle or pitch<=-self.tip_over_angle:
             self.robot_flip_over = True
 
+    '''
+     get flipper front position callback 
+     @ param odom_data
+     '''
     def flipperFrontPose(self, flipper_pose):
         self.flipperPoseFront = flipper_pose
         self.mean_flipper_front_angl_vel_y.addPosition(flipper_pose.current_pos)
 
-
+    '''
+     get flipper rear position callback 
+     @ param odom_data
+     '''
     def flipperRearPose(self, flipper_pose):
         self.flipperPoseRear = flipper_pose
         self.mean_flipper_rear_angl_vel_y.addPosition(flipper_pose.current_pos)
 
 
 
-    # callback to get the goal robot pose as position (x,y,z) and orientation as quaternion (x,y,z,w)
+    '''
+    callback to get the goal-robot pose as position (x,y,z) and orientation as quaternion (x,y,z,w)
+    @ param odom_data
+    '''
     def goalCallback(self, odom_data):
         self.goalPose = odom_data
 
-    # callback to get the goal robot pose as position (x,y,z) and orientation as quaternion (x,y,z,w)
+    '''
+    callback to get robot orientation
+    @ param odom_data
+    '''
     def imuCallback(self, imu_data):
         self.imu_data = imu_data
         #self.accelerations.append(abs(imu_data.))
@@ -142,7 +161,10 @@ class image_converter():
             self.acceleration_to_high = angularAccely
             self.accelZ = angularAccely
 
-
+    '''
+    calculate mean values for linear and angular veloicity 
+    @ return mean- linear and angular velocity and acceleration
+    '''
     def clcMean(self):
 
         print(self.mean_angl_vel_y.getvelovitys())
@@ -163,14 +185,20 @@ class image_converter():
         file.write("meanFlipperRearAgnleAccY = " + str(meanFlipperRearAgnleAccY) + "\n")
 
         file.close()
-        #return meanLinVel, meanAngVel, meanLinAcc, meanAngAcc
+        return meanLinVel, meanAngVel, meanLinAcc, meanAngAcc
 
+    '''
+    reset the the buffers
+    '''
     def reset(self):
         self.mean_angl_vel_y.resetBuffer()
         self.mean_flipper_front_angl_vel_y.resetBuffer()
         self.mean_flipper_rear_angl_vel_y.resetBuffer()
 
-    # return the eleviation map image with [200,200] Pixel and saves it to a global variable
+    '''
+    return the eleviation map image with [200,200] Pixel and saves it to a global variable
+    @ param map_data
+    '''
     def robotGroundMapCallback(self, map_data):
         '''Callback function of subscribed topic.
         Here images get converted and features detected'''
@@ -183,10 +211,17 @@ class image_converter():
 
         self.robotGroundMap = np.asarray(cv2.resize(image, (28, 28)))
 
-
+    '''
+    return states
+    @ return depth image, elevation map image, current robot pose, goal pose
+    '''
     def returnData(self):
         return self.robotGroundMap, self.currentPose, self.goalPose, self.flipperPoseFront, self.flipperPoseRear
 
+    '''
+    return roll pitch yaw robot orientation
+    @ return roll pitch yaw orientation
+    '''
     def returnRollPitchYaw(self, orientation):
         orientation_list = [orientation.x, orientation.y, orientation.z, orientation.w]
         return  euler_from_quaternion(orientation_list)
@@ -216,8 +251,10 @@ class image_converter():
     def shoutdown_node(self):
         rospy.signal_shutdown("because reasons")
 
-# class to calculate velocity acceleration and statistics
 
+'''
+class to calculate velocity acceleration and statistics
+'''
 class Memory():
     def __init__(self, size):
         self.buffer = deque(maxlen=size)

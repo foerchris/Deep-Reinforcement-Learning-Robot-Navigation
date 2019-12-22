@@ -53,10 +53,18 @@ class image_converter():
         self.mean_lin_vel.resetBuffer()
         self.mean_angl_vel.resetBuffer()
 
+    '''
+    stop all robots
+    '''
     def stop(self):
         self.velocities.linear.x = 0
         self.velocities.angular.z = 0
 
+    '''
+    set the action which should executed
+    @ param action
+    @ return linear and angular velocity
+    '''
     def setAction(self, action):
 
        # action[0] += 1.0
@@ -79,6 +87,10 @@ class image_converter():
         self.velocities.angular.z = action[1]
         return  self.velocities.linear.x, self.velocities.angular.z
 
+    '''
+    calculate mean values for linear and angular veloicity 
+    @ return mean- linear and angular velocity and acceleration
+    '''
     def clcMean(self):
         meanLinVel, meanLinAcc = self.mean_lin_vel.totalMean()
         meanAngVel, meanAngAcc = self.mean_angl_vel.totalMean()
@@ -97,16 +109,21 @@ class image_converter():
         #file.close()
         return meanLinVel, meanAngVel, meanLinAcc, meanAngAcc
 
-    # get current robot pose
+    '''
+    get current robot pose
+    @ param odom_data
+    '''
     def robotPoseCallback(self,odom_data):
         self.currentRobotPose = odom_data
-        print(self.velocities)
         self.robotMovementPub.publish( self.velocities)
 
         self.mean_lin_vel.addVelocity(odom_data.twist.twist.linear.x)
         self.mean_angl_vel.addVelocity(odom_data.twist.twist.angular.z)
 
-    # callback to get the goal-robot pose as position (x,y,z) and orientation as quaternion (x,y,z,w)
+    '''
+    callback to get the goal-robot pose as position (x,y,z) and orientation as quaternion (x,y,z,w)
+    @ param odom_data
+    '''
     def goalCallback(self,odom_data):
         self.goalPose = odom_data
 
@@ -115,12 +132,19 @@ class image_converter():
         if currentdistance <= self.deltaDist:
             self.reach_the_goal = True
 
-    # calculate distance to goal
+    '''
+    calculate distance to goal
+    @ param image; goal pose
+    @ return distance 
+    '''
     def clcDistance(self, goal):
         distance = math.sqrt(pow((goal.x), 2) + pow((goal.y), 2))
         return distance
 
-    # return the eleviation map image with [x,x] Pixel and saves it to a global variable
+    '''
+    return the depth image with [x,x] Pixel and saves it to a global variable
+    @ param depth_data
+    '''
     def depthImageCallback(self, depth_data):
         #print("depthImageCallback");
         try:
@@ -129,8 +153,10 @@ class image_converter():
             print(e)
         self.depthImage = cv2.resize(cv_image, (84, 84))
 
-
-    # return the eleviation map image with [200,200] Pixel and saves it to a global variable
+    '''
+    return the eleviation map image with [200,200] Pixel and saves it to a global variable
+    @ param map_data
+    '''
     def elevImageCallback(self,map_data):
         '''Callback function of subscribed topic.
               Here images get converted and features detected'''
@@ -146,7 +172,10 @@ class image_converter():
 
         self.eleviationImage = map
 
-    # return states
+    '''
+    return states
+    @ return depth image, elevation map image, current robot pose, goal pose
+    '''
     def returnData(self):
         return self.depthImage, self.eleviationImage, self.currentRobotPose, self.goalPose
 
@@ -167,7 +196,9 @@ class image_converter():
     def shoutdown_node(self):
         rospy.signal_shutdown("because reason")
 
-# class to calculate velocity acceleration and statistics
+'''
+class to calculate velocity acceleration and statistics
+'''
 class Memory():
     def __init__(self, size):
         self.buffer = deque(maxlen=size)

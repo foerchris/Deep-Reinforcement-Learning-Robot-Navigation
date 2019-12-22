@@ -49,7 +49,14 @@ class Agent():
 
         self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=learning_rate)
 
-
+    '''
+    compute the general advantage estimate (gae)
+    @ param next_value; the next value
+    @ param rewards; the rewards
+    @ param masks; if the state is an ende state
+    @ param masks; the values
+    @ return computed gae
+    '''
     def compute_gae(self, next_value, rewards, masks, values, gamma=0.99, tau=0.95):
         values = values + [next_value]
         gae = 0
@@ -60,14 +67,41 @@ class Agent():
             returns.insert(0, gae + values[step])
         return returns
 
-
+    '''
+    creates mini batches from collected states
+    @ param map_states; collected states
+    @ param depth_states; collected states
+    @ param goal_states; collected states
+    @ param hidden_states_h; lstm hidden state
+    @ param hidden_states_c; lstm cell state
+    @ param actions; collected actions
+    @ param log_probs; log probabilities
+    @ param returns; gae
+    @ param advantage; advantage
+    @ param value; values
+    @ return minie batches
+    '''
     def ppo_iter(self, map_states, orientation_states, hidden_states_h, hidden_states_c, actions, log_probs, returns, advantage, value):
         batch_size = map_states.size(0)
         for _ in range(batch_size // self.mini_batch_size):
             rand_ids = np.random.randint(0, batch_size-self.worker_number, self.mini_batch_size)
             yield map_states[rand_ids, :], orientation_states[rand_ids, :], hidden_states_h[rand_ids, :], hidden_states_c[rand_ids, :], map_states[rand_ids+self.worker_number, :], orientation_states[rand_ids+self.worker_number, :], hidden_states_h[rand_ids+self.worker_number, :], hidden_states_c[rand_ids+self.worker_number, :], actions[rand_ids, :], log_probs[rand_ids, :], returns[rand_ids, :], advantage[rand_ids, :], value[rand_ids, :]
 
-
+    '''
+    update the neural network    
+    @ param frame_idx; current frame index
+    @ param ppo_epochs; number of update iterations
+    @ param map_states; collected states
+    @ param depth_states; collected states
+    @ param goal_states; collected states
+    @ param hidden_states_h; lstm hidden state
+    @ param hidden_states_c; lstm cell state
+    @ param actions; collected actions
+    @ param log_probs; log probabilities
+    @ param returns; gae
+    @ param advantage; advantage
+    @ param value; values
+    '''
     def ppo_update(self, frame_idx, ppo_epochs, map_states, orientation_states, hidden_states_h, hidden_states_c, actions, log_probs, returns, advantages, values, epoch, clip_param=0.2, discount=0.5, beta=0.001):
         count_steps = 0
         sum_returns = 0.0
@@ -77,17 +111,11 @@ class Agent():
         sum_entropy = 0.0
         sum_loss_total = 0.0
 
-
         lr = self.init_lr - (self.init_lr - self.final_lr)*(1-math.exp(-epoch/self.lr_decay_epoch))
         self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lr)
 
-
-
         # Normalize the advantages
         advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
-
-
-
 
         for _ in range(ppo_epochs):
             for  map_state, orientation_state, hidden_state_h, hidden_state_c, next_map_state, next_orientation_state, next_hidden_state_h, next_hidden_state_c, action, old_log_probs, return_, advantage, old_value in self.ppo_iter(map_states, orientation_states, hidden_states_h, hidden_states_c, actions, log_probs,

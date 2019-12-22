@@ -78,12 +78,20 @@ class robotEnv():
         self.msg.attach(part2)
         self.stepCounter =0
 
-
+    '''
+     set the episode length
+     @ param action
+     @ return linear and angular velocity
+     '''
     def set_episode_length(self,EpisodeLength):
         self.EpisodeLength = EpisodeLength
 
-    # Takes a step inside the enviroment according to the proposed action and return the depth image ([x,x] Pixel) the eleviation map ([200,200] Pixel),
-    # orientation (Euler notation [roll, pitch, yaw]) and the archived reward for the new state
+    '''
+    Takes a step inside the enviroment according to the proposed action and return the depth image ([x,x] Pixel) the eleviation map ([200,200] Pixel),
+    orientation (Euler notation [roll, pitch, yaw]) and the archived reward for the new state
+    @ param action; action which should be taken
+    @ return levation map image, depth image, goal pose, reward, end of episode 
+    '''
     def step(self, action):
 
         self.startSteps()
@@ -105,7 +113,10 @@ class robotEnv():
         self.stopSteps()
         return  robotGroundData, currentPose, reward, d, self.angl_acc, info
 
-    # transform messures to states and return them
+    '''
+    transform messures to states and return them
+    @ return elevation map image, depth image, goal pose 
+    '''
     def get_state(self):
         robotGroundMap, self.currentPose, self.goalPose, self.flipperPoseFront,  self.flipperPoseRear = self.ic.returnData()
 
@@ -137,11 +148,18 @@ class robotEnv():
 
         return robotGroundMap, currentOrientation
 
+    '''
+    return action size
+    @ return action size
+    '''
     def get_available_actions_size(self):
         return self.availableActionsSize
 
-    # Restet the enviroment and return the depth image ([x,x] Pixel) the eleviation map ([200,200] Pixel) and
-    # orientation (Euler notation [roll, pitch, yaw])of the oberservation in the new enviroment
+    '''
+    Restet the enviroment and return the depth image ([x,x] Pixel) the eleviation map ([200,200] Pixel) and
+    orientation (Euler notation [roll, pitch, yaw])of the oberservation in the new enviroment
+    @ return states
+    '''
     def reset(self):
         # reset the model and replace the robot at a random location
         self.ic.stop()
@@ -211,7 +229,10 @@ class robotEnv():
 
         return self.get_state()
 
-
+    '''
+    calculate rewards
+    @ return reward and if episode is finished
+    '''
     def clcReward(self):
         _, self.currentPose, self.goalPose, _, _ = self.ic.returnData()
 
@@ -281,23 +302,46 @@ class robotEnv():
 
         return reward, EndEpisode
 
+    '''
+    stop robot
+    '''
     def stopSteps(self):
         self.ic.startStopRobot.data = False;
         self.ic.stop()
 
+    '''
+    set the episode length
+    @ return true if episode is finished
+    '''
     def startSteps(self):
         self.ic.startStopRobot.data = True;
 
+    '''
+    checks if episode is finished
+    '''
     def is_episode_finished(self):
         return self.episodeFinished
 
+    '''
+    set end of simulation
+    '''
     def endEnv(self):
         rospy.set_param("/GETjag"+ str(self.number) + "/End_of_enviroment",True)
 
+    '''
+    return roll pitch yaw orientation from quaternion 
+    @ param action
+    @ return roll pitch yaw orientation
+    '''
     def returnRollPitchYaw(self, orientation):
         orientation_list = [orientation.x, orientation.y, orientation.z, orientation.w]
         return  euler_from_quaternion(orientation_list)
 
+    '''
+    calculate the distance
+    @ param goal pose
+    @ return distance 
+    '''
     def clcDistance(self, start, goal):
         distance = math.sqrt(pow((goal.x),2)+pow((goal.y),2))
         return distance
@@ -307,8 +351,9 @@ class robotEnv():
         self.ic.shoutdown_node();
         sys.exit(0)
 
-## caclulate mean and std
-
+'''
+caclulate mean and std
+'''
 class Memory():
     def __init__(self, size):
         self.buffer = deque(maxlen=size)

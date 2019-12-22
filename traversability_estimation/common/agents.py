@@ -45,7 +45,14 @@ class Agent():
             self.feature_net.apply(self.feature_net.init_weights)
             self.ac_model.apply(self.ac_model.init_weights)
         self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=learning_rate)
-
+    '''
+    compute the general advantage estimate (gae)
+    @ param next_value; the next value
+    @ param rewards; the rewards
+    @ param masks; if the state is an ende state
+    @ param masks; the values
+    @ return computed gae
+    '''
 
     def compute_gae(self, next_value, rewards, masks, values, gamma=0.99, tau=0.95):
         values = values + [next_value]
@@ -57,7 +64,20 @@ class Agent():
             returns.insert(0, gae + values[step])
         return returns
 
-
+    '''
+    creates mini batches from collected states
+    @ param map_states; collected states
+    @ param depth_states; collected states
+    @ param goal_states; collected states
+    @ param hidden_states_h; lstm hidden state
+    @ param hidden_states_c; lstm cell state
+    @ param actions; collected actions
+    @ param log_probs; log probabilities
+    @ param returns; gae
+    @ param advantage; advantage
+    @ param value; values
+    @ return minie batches
+    '''
     def ppo_iter(self, map_states, depth_states, goal_states, hidden_states_h, hidden_states_c, actions, log_probs, returns, advantage, value):
         batch_size = map_states.size(0)
         #print('map_states.shape' + str(map_states.shape))
@@ -66,7 +86,21 @@ class Agent():
             #print('map_states[rand_ids, :].shape' + str(map_states[rand_ids, :].shape))
             yield map_states[rand_ids, :], depth_states[rand_ids, :], goal_states[rand_ids, :], hidden_states_h[rand_ids, :], hidden_states_c[rand_ids, :], actions[rand_ids, :], log_probs[rand_ids, :], returns[rand_ids, :], advantage[rand_ids, :], value[rand_ids, :]
 
-
+    '''
+    update the neural network    
+    @ param frame_idx; current frame index
+    @ param ppo_epochs; number of update iterations
+    @ param map_states; collected states
+    @ param depth_states; collected states
+    @ param goal_states; collected states
+    @ param hidden_states_h; lstm hidden state
+    @ param hidden_states_c; lstm cell state
+    @ param actions; collected actions
+    @ param log_probs; log probabilities
+    @ param returns; gae
+    @ param advantage; advantage
+    @ param value; values
+    '''
     def ppo_update(self, frame_idx, ppo_epochs, map_states, depth_states, goal_states, hidden_states_h, hidden_states_c, actions, log_probs, returns, advantages, values, epoch, clip_param=0.2, discount=0.5, beta=0.001, max_grad_norm =0.5):
         count_steps = 0
         sum_returns = 0.0

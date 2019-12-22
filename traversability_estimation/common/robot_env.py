@@ -93,11 +93,20 @@ class robotEnv():
         self.cell_states = cell_checker(10.0)
         self.ic.stop()
 
+    '''
+    set the episode length
+    @ param action
+    @ return linear and angular velocity
+    '''
     def set_episode_length(self, EpisodeLength):
         self.EpisodeLength = EpisodeLength
 
-    # Takes a step inside the enviroment according to the proposed action and return the depth image ([x,x] Pixel) the eleviation map ([200,200] Pixel),
-    # orientation (Euler notation [roll, pitch, yaw]) and the archived reward for the new state
+    '''
+    Takes a step inside the enviroment according to the proposed action and return the depth image ([x,x] Pixel) the eleviation map ([200,200] Pixel),
+    orientation (Euler notation [roll, pitch, yaw]) and the archived reward for the new state
+    @ param action; action which should be taken
+    @ return levation map image, depth image, goal pose, reward, end of episode 
+    '''
     def step(self, action):
         # action[0] = abs(action[0])
 
@@ -120,7 +129,10 @@ class robotEnv():
 
         return eleviationData, depthData, goalPose, reward, d, info
 
-    # transform messures to states and return them
+    '''
+    transform messures to states and return them
+    @ return elevation map image, depth image, goal pose 
+    '''
     def get_state(self):
         depthImage, eleviationImage, self.currentPose, self.goalPose = self.ic.returnData()
 
@@ -163,11 +175,18 @@ class robotEnv():
 
         return eleviationData, depthData, goalPose
 
+    '''
+    return action size
+    @ return action size
+    '''
     def get_available_actions_size(self):
         return self.availableActionsSize
 
-    # Restet the enviroment and return the depth image ([x,x] Pixel) the eleviation map ([200,200] Pixel) and
-    # orientation (Euler notation [roll, pitch, yaw])of the oberservation in the new enviroment
+    '''
+    Restet the enviroment and return the depth image ([x,x] Pixel) the eleviation map ([200,200] Pixel) and
+    orientation (Euler notation [roll, pitch, yaw])of the oberservation in the new enviroment
+    @ return states
+    '''
     def reset(self):
         # reset the model and replace the robot at a random location
         self.ic.stop()
@@ -239,6 +258,10 @@ class robotEnv():
 
         return self.get_state()
 
+    '''
+    calculate rewards
+    @ return reward and if episode is finished
+    '''
     def clcReward(self):
         depthImage, eleviationImage, self.currentPose, self.goalPose = self.ic.returnData()
         roll, pitch, yaw = self.returnRollPitchYaw(self.currentPose.pose.pose.orientation)
@@ -339,21 +362,42 @@ class robotEnv():
             self.explored_last = 0
         return reward, EndEpisode
 
+    '''
+    stop robot
+    '''
     def stopSteps(self):
         self.ic.stop()
 
+    '''
+    set the episode length
+    @ return true if episode is finished
+    '''
     def is_episode_finished(self):
         return self.episodeFinished
 
+    '''
+    set end of simulation
+    '''
     def endEnv(self):
         rospy.set_param("/GETjag" + str(self.number) + "/End_of_enviroment", True)
 
+    '''
+    calculate roll pitch yaw from x y z
+    @ param goalPose; goal pose
+    @ return roll pitch yaw angles
+    '''
     def clcRPYGoalPose(self, goalPose):
         yaw = self.clcAngle(goalPose.x, goalPose.y)
         roll = math.atan(goalPose.z / goalPose.x)
         pitch = math.atan(goalPose.z / goalPose.y)
         return roll, pitch, yaw
 
+    '''
+    calculate yaw angle
+    @ param v1; x
+    @ param v2; y
+    @ return angle
+    '''
     def clcAngle(self, v1, v2):
         if (v1 > 0):
             return math.atan(v2 / v1)
@@ -368,22 +412,40 @@ class robotEnv():
         else:
             return -math.pi / 2
 
+    '''
+    return roll pitch yaw orientation from quaternion 
+    @ param action
+    @ return roll pitch yaw orientation
+    '''
     def returnRollPitchYaw(self, orientation):
         orientation_list = [orientation.x, orientation.y, orientation.z, orientation.w]
         return euler_from_quaternion(orientation_list)
 
-    def return_times_reached_goal(self, start, goal):
+    '''
+    return episode and numbers goal reached
+    @ return number of episodes and number of goal reached 
+    '''
+    def return_times_reached_goal(self):
         return self.number_of_epsiodes, self.number_reached_goal
 
+    '''
+    calculate the distance
+    @ param goal pose
+    @ return distance 
+    '''
     def clcDistance(self, goal):
         distance = math.sqrt(pow((goal.x), 2) + pow((goal.y), 2))
         return distance
+
 
     def signal_handler(self, sig, frame):
         print('You pressed Ctrl+C!')
         self.ic.shoutdown_node();
         sys.exit(0)
 
+'''
+checks if an unvisited cell was visited
+'''
 # cheaks zells for exploring areas
 class cell_checker():
     def __init__(self, size):
@@ -415,8 +477,10 @@ class cell_checker():
                 self.valueX.append(x - self.env_size / 2.0)
                 self.valueY.append(y - self.env_size / 2.0)
 
-## caclulate mean and std
 
+'''
+caclulate mean and std
+'''
 class Memory():
     def __init__(self, size):
         self.buffer = deque(maxlen=size)
