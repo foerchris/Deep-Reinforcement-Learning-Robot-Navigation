@@ -33,7 +33,6 @@ class Agent():
         self.device   = torch.device("cuda" if use_cuda else "cpu")
         torch.cuda.empty_cache()
 
-       # self.summary_writer = tf.summary.FileWriter("train_getjag/ppo/Tensorboard")
         self.writer = writer
 
         self.feature_net = FeatureNetwork(state_size_map*stack_size, state_size_depth * stack_size, state_size_goal * stack_size, hidden_size, stack_size, lstm_layers).to(self.device)
@@ -45,9 +44,15 @@ class Agent():
         else:
             self.feature_net.apply(self.feature_net.init_weights)
             self.ac_model.apply(self.ac_model.init_weights)
-        #self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=learning_rate)
         self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=learning_rate)
-
+    '''
+    compute the general advantage estimate (gae)
+    @ param next_value; the next value
+    @ param rewards; the rewards
+    @ param masks; if the state is an ende state
+    @ param masks; the values
+    @ return computed gae
+    '''
 
     def compute_gae(self, next_value, rewards, masks, values, gamma=0.99, tau=0.95):
         values = values + [next_value]
@@ -59,7 +64,20 @@ class Agent():
             returns.insert(0, gae + values[step])
         return returns
 
-
+    '''
+    creates mini batches from collected states
+    @ param map_states; collected states
+    @ param depth_states; collected states
+    @ param goal_states; collected states
+    @ param hidden_states_h; lstm hidden state
+    @ param hidden_states_c; lstm cell state
+    @ param actions; collected actions
+    @ param log_probs; log probabilities
+    @ param returns; gae
+    @ param advantage; advantage
+    @ param value; values
+    @ return minie batches
+    '''
     def ppo_iter(self, map_states, depth_states, goal_states, hidden_states_h, hidden_states_c, actions, log_probs, returns, advantage, value):
         batch_size = map_states.size(0)
         #print('map_states.shape' + str(map_states.shape))
@@ -68,7 +86,21 @@ class Agent():
             #print('map_states[rand_ids, :].shape' + str(map_states[rand_ids, :].shape))
             yield map_states[rand_ids, :], depth_states[rand_ids, :], goal_states[rand_ids, :], hidden_states_h[rand_ids, :], hidden_states_c[rand_ids, :], actions[rand_ids, :], log_probs[rand_ids, :], returns[rand_ids, :], advantage[rand_ids, :], value[rand_ids, :]
 
-
+    '''
+    update the neural network    
+    @ param frame_idx; current frame index
+    @ param ppo_epochs; number of update iterations
+    @ param map_states; collected states
+    @ param depth_states; collected states
+    @ param goal_states; collected states
+    @ param hidden_states_h; lstm hidden state
+    @ param hidden_states_c; lstm cell state
+    @ param actions; collected actions
+    @ param log_probs; log probabilities
+    @ param returns; gae
+    @ param advantage; advantage
+    @ param value; values
+    '''
     def ppo_update(self, frame_idx, ppo_epochs, map_states, depth_states, goal_states, hidden_states_h, hidden_states_c, actions, log_probs, returns, advantages, values, epoch, clip_param=0.2, discount=0.5, beta=0.001, max_grad_norm =0.5):
         count_steps = 0
         sum_returns = 0.0
@@ -78,6 +110,7 @@ class Agent():
         sum_entropy = 0.0
         sum_loss_total = 0.0
 
+<<<<<<< HEAD
         #lr = self.init_lr * (0.1**(epoch // self.lr_decay_epoch))
 
         #lr = self.init_lr - (self.init_lr - self.final_lr)*(1-math.exp(-epoch/self.lr_decay_epoch))
@@ -91,6 +124,8 @@ class Agent():
 
 
 
+=======
+>>>>>>> 2d0b529eb921522d18f25a8f53fd368251413eef
         # Normalize the advantages
         advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
@@ -105,7 +140,10 @@ class Agent():
                 frac = 1.0 - (update -1.0) / ppo_epochs
 
                 lrnow = self.init_lr * frac
+<<<<<<< HEAD
                # print('lrnow' + str(lrnow))
+=======
+>>>>>>> 2d0b529eb921522d18f25a8f53fd368251413eef
 
                 self.optimizer = optim.Adam(list(self.feature_net.parameters()) + list(self.ac_model.parameters()), lr=lrnow)
 
@@ -146,8 +184,6 @@ class Agent():
 
                 nn.utils.clip_grad_norm_(self.ac_model.parameters(),max_grad_norm)
 
-                #for p in model.parameters():
-                    #p.data.add_(-lr, p.grad.data)
                 self.optimizer.step()
 
                 # track statistics

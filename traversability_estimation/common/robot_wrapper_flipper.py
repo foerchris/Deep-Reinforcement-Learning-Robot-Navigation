@@ -67,86 +67,88 @@ class image_converter():
         self.mean_flipper_rear_angl_vel_y.resetBuffer()
         self.startStopRobotPub.publish(True)
 
+    '''
+    stop all robots
+    '''
     def stop(self):
-        self.flipperVelFront = self.flipperPoseFront.current_pos
-        self.flipperVelRear = self.flipperPoseRear.current_pos
+        #self.flipperVelFront = self.flipperPoseFront.current_pos
+        #self.flipperVelRear = self.flipperPoseRear.current_pos
 
-       # self.flipperVelFront =0
-       # self.flipperVelRear = 0
+        self.flipperVelFront =0
+        self.flipperVelRear = 0
 
+    '''
+    set the action which should executed
+    @ param action
+    '''
     def setAction(self, action):
         bound = 1.22
 
-       # frontPose = self.flipperPoseFront.current_pos
-       # rearPose = self.flipperPoseRear.current_pos
-
-        #if(self.number == 1):
-        #    print("action[0]" + str(action[0]))
-        #    print("action[1]" + str(action[1]))
-         #   print("frontPose" + str(frontPose))
-          #  print("rearPose" + str(rearPose))
+        frontPose = self.flipperPoseFront.current_pos
+        rearPose = self.flipperPoseRear.current_pos
 
 
-        #
-        # if(rearPose >= bound and action[0]>0):
-        #     action[0] = -abs(action[0])
-        # elif(rearPose  <= -bound and action[0]<0):
-        #     action[0] = abs(action[0])
-        #
-        # if (frontPose  >= bound and action[1]>0):
-        #     action[1] = -abs(action[1])
-        # elif (frontPose <= -bound and action[1]<0):
-        #     action[1] = abs(action[1])
-        #
-        # if(self.number == 1):
-        #     print("action[0]" + str(action[0]))
-        #     print("action[1]" + str(action[1]))
+        if(frontPose >= bound and action[0]>0):
+             action[0] = -action[0]
+        elif(frontPose <= -bound and action[0]<0):
+             action[0] = -action[0]
+
+        if (rearPose >= bound and action[1]>0):
+             action[1] = -action[1]
+        elif (rearPose <= -bound and action[1]<0):
+             action[1] = -action[1]
+
+        #self.flipperVelFront = action[0]*(math.pi/2)
+        #self.flipperVelRear = action[1]*(math.pi/2)
+
+        self.flipperVelFront = action[0]
+        self.flipperVelRear = action[1]
 
 
-        self.flipperVelFront = action[0]*(math.pi/2)
-        self.flipperVelRear = action[1]*(math.pi/2)
-
-        #self.flipperVelFront = action[0]
-        #self.flipperVelRear = action[1]
-
-
-    # callback to get the current robot pose as position (x,y,z) and orientation as quaternion (x,y,z,w)
-    # also transmits the robot action as velocities
+    '''
+    get current robot pose
+    @ param odom_data
+    '''
     def robotCallback(self,odom_data):
         self.currentPose = odom_data
-        #if(self.number==1):
-        #    self.startStopRobot.data = False
-        #    self.flipperVelFront = 0
-        #    self.flipperVelRear = 0
 
-        self.startStopRobotPub.publish( self.startStopRobot)
-       # self.robotFlipperFrontPub.publish( self.flipperVelFront)
-       # self.robotFlipperRearPub.publish( self.flipperVelRear)
+        self.robotFlipperFrontPub.publish( self.flipperVelFront)
+        self.robotFlipperRearPub.publish( self.flipperVelRear)
 
         roll, pitch, yaw = self.returnRollPitchYaw(self.currentPose.pose.pose.orientation)
-
-
-
 
         if roll>=self.tip_over_angle or roll<=-self.tip_over_angle or pitch>=self.tip_over_angle or pitch<=-self.tip_over_angle:
             self.robot_flip_over = True
 
+    '''
+     get flipper front position callback 
+     @ param odom_data
+     '''
     def flipperFrontPose(self, flipper_pose):
         self.flipperPoseFront = flipper_pose
         self.mean_flipper_front_angl_vel_y.addPosition(flipper_pose.current_pos)
 
-
+    '''
+     get flipper rear position callback 
+     @ param odom_data
+     '''
     def flipperRearPose(self, flipper_pose):
         self.flipperPoseRear = flipper_pose
         self.mean_flipper_rear_angl_vel_y.addPosition(flipper_pose.current_pos)
 
 
 
-    # callback to get the goal robot pose as position (x,y,z) and orientation as quaternion (x,y,z,w)
+    '''
+    callback to get the goal-robot pose as position (x,y,z) and orientation as quaternion (x,y,z,w)
+    @ param odom_data
+    '''
     def goalCallback(self, odom_data):
         self.goalPose = odom_data
 
-    # callback to get the goal robot pose as position (x,y,z) and orientation as quaternion (x,y,z,w)
+    '''
+    callback to get robot orientation
+    @ param odom_data
+    '''
     def imuCallback(self, imu_data):
         self.imu_data = imu_data
         #self.accelerations.append(abs(imu_data.))
@@ -159,7 +161,10 @@ class image_converter():
             self.acceleration_to_high = angularAccely
             self.accelZ = angularAccely
 
-
+    '''
+    calculate mean values for linear and angular veloicity 
+    @ return mean- linear and angular velocity and acceleration
+    '''
     def clcMean(self):
 
         print(self.mean_angl_vel_y.getvelovitys())
@@ -168,13 +173,6 @@ class image_converter():
         meanFlipperFrontAgnleVelY, meanFlipperFrontAgnleAccY = self.mean_flipper_front_angl_vel_y.totalMean()
 
         meanFlipperRearAgnleVelY, meanFlipperRearAgnleAccY = self.mean_flipper_rear_angl_vel_y.totalMean()
-
-        # print("meanLinVel = " + str(meanLinVel))
-        # print("meanAngVel = " + str(meanAngVel))
-        # print("meanLinAcc = " + str(meanLinAcc))
-        # print("meanAngAcc = " + str(meanAngAcc))
-
-        ##print("linearAccelerations max = " + str(np.max(self.linearAccelerations)))
 
         file = open("Gazebo Script/messungen/flipper_acc_measures.txt", "w")
         file.write("meanAgnleVelY = " + str(meanAgnleVelY) + "\n")
@@ -187,14 +185,20 @@ class image_converter():
         file.write("meanFlipperRearAgnleAccY = " + str(meanFlipperRearAgnleAccY) + "\n")
 
         file.close()
-        #return meanLinVel, meanAngVel, meanLinAcc, meanAngAcc
+        return meanLinVel, meanAngVel, meanLinAcc, meanAngAcc
 
+    '''
+    reset the the buffers
+    '''
     def reset(self):
         self.mean_angl_vel_y.resetBuffer()
         self.mean_flipper_front_angl_vel_y.resetBuffer()
         self.mean_flipper_rear_angl_vel_y.resetBuffer()
 
-    # return the eleviation map image with [200,200] Pixel and saves it to a global variable
+    '''
+    return the eleviation map image with [200,200] Pixel and saves it to a global variable
+    @ param map_data
+    '''
     def robotGroundMapCallback(self, map_data):
         '''Callback function of subscribed topic.
         Here images get converted and features detected'''
@@ -207,30 +211,32 @@ class image_converter():
 
         self.robotGroundMap = np.asarray(cv2.resize(image, (28, 28)))
 
-
-
-
-
-
+    '''
+    return states
+    @ return depth image, elevation map image, current robot pose, goal pose
+    '''
     def returnData(self):
         return self.robotGroundMap, self.currentPose, self.goalPose, self.flipperPoseFront, self.flipperPoseRear
 
+    '''
+    return roll pitch yaw robot orientation
+    @ return roll pitch yaw orientation
+    '''
     def returnRollPitchYaw(self, orientation):
         orientation_list = [orientation.x, orientation.y, orientation.z, orientation.w]
         return  euler_from_quaternion(orientation_list)
 
     def main( self):
         '''Initializes and cleanup ros node'''
-        #rospy.signal_shutdown("shut de fuck down")
         print("rospy.init_node('GETjag_"+ str(self.number) +"_drl_gaz_robot_env_wrapper_flipper_worker')");
         rospy.init_node('GETjag_'+ str(self.number) +'_drl_gaz_robot_env_wrapper_flipper_worker')
 
         self.startStopRobotPub = rospy.Publisher("/GETjag" + str(self.number) + "/start_stop_robot", Bool, queue_size=10)
-        #self.robotFlipperFrontPub = rospy.Publisher("/GETjag" + str(self.number) + "/flipper_front_controller/cmd_vel", Float64, queue_size=10)
-        #self.robotFlipperRearPub = rospy.Publisher("/GETjag" + str(self.number) + "/flipper_rear_controller/cmd_vel", Float64, queue_size=10)
+        self.robotFlipperFrontPub = rospy.Publisher("/GETjag" + str(self.number) + "/flipper_front_controller/cmd_vel", Float64, queue_size=10)
+        self.robotFlipperRearPub = rospy.Publisher("/GETjag" + str(self.number) + "/flipper_rear_controller/cmd_vel", Float64, queue_size=10)
 
-        self.robotFlipperFrontPub = rospy.Publisher("GETjag" + str(self.number) + "/flipper_front_controller/command", Float64, queue_size=10)
-        self.robotFlipperRearPub = rospy.Publisher("GETjag" + str(self.number) + "/flipper_rear_controller/command", Float64, queue_size=10)
+       # self.robotFlipperFrontPub = rospy.Publisher("GETjag" + str(self.number) + "/flipper_front_controller/command", Float64, queue_size=10)
+       # self.robotFlipperRearPub = rospy.Publisher("GETjag" + str(self.number) + "/flipper_rear_controller/command", Float64, queue_size=10)
 
         self.robotPoseSub = rospy.Subscriber("GETjag" + str(self.number) + "/odom", Odometry, self.robotCallback)
         self.flipperFrontPoseSub = rospy.Subscriber("GETjag" + str(self.number) + "/flipper_front_controller/state", JointState, self.flipperFrontPose)
@@ -246,6 +252,9 @@ class image_converter():
         rospy.signal_shutdown("because reasons")
 
 
+'''
+class to calculate velocity acceleration and statistics
+'''
 class Memory():
     def __init__(self, size):
         self.buffer = deque(maxlen=size)
@@ -272,7 +281,7 @@ class Memory():
             self.counter += 1
         else:
             self.returnMean = True
-            self.clcAccFromPose()
+            self.clcAccFromVel()
         return self.accel
 
     def addPosition(self, value):

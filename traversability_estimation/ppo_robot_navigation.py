@@ -39,7 +39,7 @@ from agents import Agent
 
 MODELPATH = os.path.join(dirname, 'train_getjag/ppo/Model')
 
-load_model = False
+load_model = True
 last_number_of_frames = 0
 
 frame_idx  = 0 + last_number_of_frames
@@ -47,7 +47,6 @@ num_envs_possible = 16;
 num_envs = 0;
 
 
-#test_writer = tf.summary.FileWriter("train_getjag/train_" + str(0), sess.graph)
 
 writer = SummaryWriter("train_getjag/ppo/Tensorboard")
 for i in range(num_envs_possible):
@@ -55,11 +54,9 @@ for i in range(num_envs_possible):
         if (rospy.get_param("/GETjag" + str(i) + "/worker_ready")):
             num_envs += 1
             print("worker_", num_envs)
-#num_envs = 1
 
 def make_env(i):
     def _thunk():
-        #env = gym.make(env_name)
         env =  robotEnv(i)
         return env
 
@@ -68,9 +65,6 @@ def make_env(i):
 envs = [make_env(i+1) for i in range(num_envs)]
 
 envs = SubprocVecEnv(envs)
-
-#env = robotEnv(1)
-
 
 state_size_map  = envs.observation_space[0].shape[0] * envs.observation_space[1].shape[1]
 state_size_depth  = envs.observation_space[1].shape[0] * envs.observation_space[1].shape[1]
@@ -87,10 +81,6 @@ class image_stacker():
     def return_stacked_frame(self):
             return self.stacked_frames
 
-
-
-
-
 stacked_map_frames = deque([np.zeros((num_envs,state_size_map/state_size_map,state_size_map/state_size_map), dtype=np.float32) for i in range(stack_size)], maxlen=stack_size)
 stacked_depth_frames = deque([np.zeros((num_envs,state_size_depth/state_size_depth,state_size_depth/state_size_depth), dtype=np.float32) for i in range(stack_size)], maxlen=stack_size)
 stacked_goal_frames = deque([np.zeros((num_envs,state_size_goal), dtype=np.float32) for i in range(stack_size)], maxlen=stack_size)
@@ -99,7 +89,6 @@ stacked_goal_frames = deque([np.zeros((num_envs,state_size_goal), dtype=np.float
 def reset_single_frame(stacked_frames, state, stack_size, number):
 
     for i in range(0, stack_size, 1):
-        #stacked_frames.append(state)
         stacked_frames[i][number] = state
 
     stacked_state = np.stack(stacked_frames, axis=1)
@@ -133,21 +122,14 @@ def stack_frames(stacked_frames, state, stack_size, is_new_episode):
     return stacked_state, stacked_frames
 
 
-def plot(frame_idx, rewards):
-    #plt.figure(figsize=(20, 5))
-   # plt.subplot(131)
-    #print("frame_idx" + str(frame_idx))
-    #print("rewards" + str(rewards))
-
-    plt.title('frame %s. reward: %s' % (frame_idx, rewards[-1]))
-    plt.plot(rewards)
-    plt.show(block=False)
-
-
 #Hyper params:
 hidden_size      = 576*2 #576*2
+<<<<<<< HEAD
 lstm_layers      = 1
 #lr               = 3e-4 #1e-3 # 3e-4
+=======
+lstm_layers      = 2
+>>>>>>> 2d0b529eb921522d18f25a8f53fd368251413eef
 
 lr               = 3e-4 #1e-3 # 3e-4
 
@@ -168,7 +150,7 @@ ENTROPY_BETA     = 0.01
 eta              = 0.01
 threshold_reward = 5
 threshold_reached_goal = 2
-#
+
 
 
 f= open("train_getjag/ppo/Tensorboard/Hyperparameters.txt","w+")
@@ -199,10 +181,6 @@ agent = Agent(state_size_map, state_size_depth , state_size_goal, num_outputs, h
 max_frames = 500000
 test_rewards = []
 
-#decay_ppo_epsilon = tf.train.polynomial_decay(PPO_EPSILON, frame_idx, max_num_steps, 1e-2, power=1.0)
-#learning_rate = tf.train.polynomial_decay(lr, frame_idx, max_num_steps, 1e-5, power=1.0)
-#optimizer = optim.Adam(model.parameters(), lr=learning_rate )
-
 episode_length = []
 for i in range(0, num_envs):
     episode_length.append(max_num_steps)
@@ -210,9 +188,9 @@ for i in range(0, num_envs):
 envs.set_episode_length(episode_length)
 
 
-early_stop = False
+early_stop = True
 
-best_reward = 3
+best_reward = 0
 
 map_state,depth_state, goal_state = envs.reset()
 
@@ -268,34 +246,27 @@ while frame_idx < max_frames and not early_stop:
             goal_state = torch.FloatTensor(goal_state).to(device)
 
 
-
+            # caclulate features
             features, next_hidden_state_h, next_hidden_state_c = agent.feature_net(map_state, depth_state, goal_state, hidden_state_h, hidden_state_c)
 
+            # caclulate action and state values
             dist, value, std  = agent.ac_model( features)
 
             total_std.append(std[1].cpu().numpy())
 
-            print(std)
-            #
 
             action = dist.sample()
-           # print("frame_idx: " + str(frame_idx))
-           # print("dist.mean.detach()"+ str(dist.mean.detach().cpu()))
-           # print("std.cpu(): " + str(std.cpu()))
+
             # this is a x,1 tensor is kontains alle the possible actions
             # the cpu command move it from a gpu tensor to a cpu tensor
             next_map_state, next_depth_state, next_goal_state, reward, done, _ = envs.step(action.cpu().numpy())
 
-
+            # count reached goal and reset stacked frames
             for i in range(0, num_envs):
                 if (done[i] == True):
-                   # print("number_of_episodes" + str(number_of_episodes))
-                   # print("number_reached_goal" + str(number_reached_goal))
-
                     number_of_episodes += 1
                     if (reward[i] >= 0.2):
                         number_reached_goal += 1
-                        #print(str(number)+"reached goal")
                         reach_goal.append(1)
                     else:
                         reach_goal.append(0)
@@ -311,12 +282,6 @@ while frame_idx < max_frames and not early_stop:
                         next_hidden_state_h[layer][i] = single_hidden_state_h[layer][0].detach()
                         next_hidden_state_c[layer][i] = single_hidden_state_c[layer][0].detach()
 
-
-
-                    #next_hidden_state_c[0][i] = single_hidden_state_c.detach()
-                   # print("number_of_episodes" + str(number_of_episodes))
-                   # print("number_reached_goal" + str(number_reached_goal))
-
             next_map_state, stacked_map_frames = stack_frames(stacked_map_frames,next_map_state,stack_size, False)
             next_depth_state, stacked_depth_frames = stack_frames(stacked_depth_frames,next_depth_state,stack_size, False)
             next_goal_state, stacked_goal_frames = stack_frames(stacked_goal_frames,next_goal_state,stack_size, False)
@@ -324,29 +289,17 @@ while frame_idx < max_frames and not early_stop:
 
             next_features, _, _ = agent.feature_net(torch.FloatTensor(next_map_state).to(device), torch.FloatTensor(next_depth_state).to(device) , torch.FloatTensor(next_goal_state).to(device), next_hidden_state_h, next_hidden_state_h)
 
-            # total reward = int reward
-            #intrinsic_reward = agent.compute_intrinsic_reward(features, next_features, action)
-
-            #reward +=  intrinsic_reward
             total_reward += reward
 
             for i in range(0, num_envs):
-                #all_rewards[i].append(reward[i])
-
                 step_count[i] += 1
                 if (done[i] == True):
                     total_step_count.append(step_count[i])
                     step_count[i] = 0
                     total_total_reward.append(total_reward[i])
-                    #print("all_rewards" + str(i + 1) + ": " + str(all_rewards[i]))
-                    #print("mean_all_rewards" + str(i + 1) + ": " + str(np.sum(all_rewards[i])))
-                    #print("total_step_count" + str(i + 1) + ": " + str(total_step_count))
-                    #print("total_total_reward" + str(i + 1) + ": " + str(total_total_reward))
                     total_reward[i] = 0
-                    #all_rewards[i] = []
 
-
-            #sample_i_rall += intrinsic_reward[sample_env_idx]
+            # calculate values to derive loss and creat stacks of states
             log_prob = dist.log_prob(action)
             entropy += dist.entropy().mean()
 
@@ -375,9 +328,9 @@ while frame_idx < max_frames and not early_stop:
             hidden_state_h = next_hidden_state_h
             hidden_state_c = next_hidden_state_c
 
-            #torch.cuda.empty_cache()
             frame_idx += 1
 
+            # update tensorboard every 2000 steps and save weights
             if frame_idx % 2000 == 0:
 
                 mean_test_rewards = np.mean(total_total_reward)
@@ -389,10 +342,8 @@ while frame_idx < max_frames and not early_stop:
                 mean_reach_goal = np.mean(reach_goal)
                 reach_goal = []
 
-
                 test_rewards.append(mean_test_rewards)
-                print("save tensorboard")
-                # plot(frame_idx, test_rewards)
+
                 writer.add_scalar('Mittelwert/Belohnungen', float(mean_test_rewards), frame_idx)
                 writer.add_scalar('Mittelwert/Epsioden Länge', float(mean_test_lenghts), frame_idx)
                 writer.add_scalar('Mittelwert/Std-Abweichung', float(mean_total_std), frame_idx)
@@ -414,7 +365,6 @@ while frame_idx < max_frames and not early_stop:
                         tensor = tensor.cpu().numpy()
                         writer.add_histogram(name, tensor, bins='doane')
 
-                print("save weights")
 
                 if best_reward is None or best_reward < mean_test_rewards:
                     if best_reward is not None:
@@ -436,7 +386,7 @@ while frame_idx < max_frames and not early_stop:
             next_goal_state = torch.FloatTensor(next_goal_state).to(device)
 
 
-
+    # update the network weights
     agent.feature_net.train()
     agent.ac_model.train()
 
@@ -466,6 +416,7 @@ while frame_idx < max_frames and not early_stop:
 
 
 
+## final test after training
 map_state,depth_state, goal_state = envs.reset()
 
 map_state, stacked_map_frames = stack_frames(stacked_map_frames, map_state, stack_size, True)
@@ -496,7 +447,7 @@ for i in range(0, num_envs):
 agent.feature_net.eval()
 agent.ac_model.eval()
 frame_idx = 0
-eval_steps = 10000
+eval_steps = 16666
 steps_idx = 0
 one_episode=True
 while frame_idx < eval_steps  and one_episode:
@@ -530,7 +481,7 @@ while frame_idx < eval_steps  and one_episode:
 
             for i in range(0, num_envs):
                 if (done[i] == True):
-                   # one_episode = False
+                    one_episode = True
                     number_of_episodes += 1
                     if (reward[i] >= 0.2):
                         number_reached_goal += 1
@@ -547,7 +498,7 @@ while frame_idx < eval_steps  and one_episode:
 
                     for layer in range(0,lstm_layers):
                         next_hidden_state_h[layer][i] = single_hidden_state_h[layer][0].detach()
-                        next_hidden_state_c[layer][i] = next_hidden_state_c[layer][0].detach()
+                        next_hidden_state_c[layer][i] = single_hidden_state_c[layer][0].detach()
 
 
             next_map_state, stacked_map_frames = stack_frames(stacked_map_frames,next_map_state,stack_size, False)

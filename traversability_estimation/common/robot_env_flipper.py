@@ -38,8 +38,6 @@ class robotEnv():
         self.currentPose = Odometry()
         self.goalPose = Odometry()
         self.ic = image_converter(self.number)
-        #thread = threading.Thread(target=self.ic.main())
-        #thread.start()
 
         self.availableActionsSize = 5
         self.EpisodeLength = 100
@@ -76,23 +74,26 @@ class robotEnv():
 
         html = '<html><body><p>Hi, Your programm has stop pleas start it again!</p></body></html>'
         part2 = MIMEText(html, 'html')
-        self.currentRobotSpeed = rospy.get_param("/GETjag"+ str(self.number) + "/current_robot_speed")
+
         self.msg.attach(part2)
         self.stepCounter =0
 
-
+    '''
+     set the episode length
+     @ param action
+     @ return linear and angular velocity
+     '''
     def set_episode_length(self,EpisodeLength):
         self.EpisodeLength = EpisodeLength
 
-    # Takes a step inside the enviroment according to the proposed action and return the depth image ([x,x] Pixel) the eleviation map ([200,200] Pixel),
-    # orientation (Euler notation [roll, pitch, yaw]) and the archived reward for the new state
+    '''
+    Takes a step inside the enviroment according to the proposed action and return the depth image ([x,x] Pixel) the eleviation map ([200,200] Pixel),
+    orientation (Euler notation [roll, pitch, yaw]) and the archived reward for the new state
+    @ param action; action which should be taken
+    @ return levation map image, depth image, goal pose, reward, end of episode 
+    '''
     def step(self, action):
-        # here the action should be to the robot and the reward should return
-        # überlegen wie ich die zeitverzögerung realisieren will
-        #action[0] = abs(action[0])
 
-        #if(self.number ==1):
-          #  print("action:" + str(action))
         self.startSteps()
 
         self.ic.setAction(action)
@@ -112,7 +113,10 @@ class robotEnv():
         self.stopSteps()
         return  robotGroundData, currentPose, reward, d, self.angl_acc, info
 
-
+    '''
+    transform messures to states and return them
+    @ return elevation map image, depth image, goal pose 
+    '''
     def get_state(self):
         robotGroundMap, self.currentPose, self.goalPose, self.flipperPoseFront,  self.flipperPoseRear = self.ic.returnData()
 
@@ -135,7 +139,6 @@ class robotEnv():
         currentOrientation = np.append(currentOrientation, np.divide(self.ic.imu_data.linear_acceleration.x,20))
         currentOrientation = np.append(currentOrientation, np.divide(self.ic.imu_data.linear_acceleration.y,20))
 
-        #print("currentOrientation" + str(currentOrientation))
         robotGroundMap = np.asarray(robotGroundMap, dtype=np.float32  )
         currentOrientation = np.asarray(currentOrientation, dtype=np.float32  )
 
@@ -145,11 +148,18 @@ class robotEnv():
 
         return robotGroundMap, currentOrientation
 
+    '''
+    return action size
+    @ return action size
+    '''
     def get_available_actions_size(self):
         return self.availableActionsSize
 
-    # Restet the enviroment and return the depth image ([x,x] Pixel) the eleviation map ([200,200] Pixel) and
-    # orientation (Euler notation [roll, pitch, yaw])of the oberservation in the new enviroment
+    '''
+    Restet the enviroment and return the depth image ([x,x] Pixel) the eleviation map ([200,200] Pixel) and
+    orientation (Euler notation [roll, pitch, yaw])of the oberservation in the new enviroment
+    @ return states
+    '''
     def reset(self):
         # reset the model and replace the robot at a random location
         self.ic.stop()
@@ -158,6 +168,7 @@ class robotEnv():
         self.delta_vel_memory.resetBuffer()
         self.ic.flipperVelFront = 0
         self.ic.flipperVelRear = 0
+
         # resest the step counter
         self.stepCounter=0
 
@@ -170,6 +181,7 @@ class robotEnv():
             sleep(1)
 
             waitForReset = False
+
             # wait that the enviroment is build up and the agent is ready
             count_reset = 0
             while waitForReset==False:
@@ -191,7 +203,9 @@ class robotEnv():
             roll, pitch, yaw = self.returnRollPitchYaw(self.currentPose.pose.pose.orientation)
 
             position_q = self.currentPose.pose.pose.position
-            # cheakk if the roboter is in a valide starting positionv
+
+
+            # check if the roboter is in a valide starting position
             if roll <= math.pi/4 and roll >= -math.pi/4 and pitch <= math.pi/4 and pitch >= -math.pi/4 and position_q.z <0.7:
                 valiedEnv = True
                 sleep(0.2)
@@ -215,13 +229,15 @@ class robotEnv():
 
         return self.get_state()
 
-
+    '''
+    calculate rewards
+    @ return reward and if episode is finished
+    '''
     def clcReward(self):
         _, self.currentPose, self.goalPose, _, _ = self.ic.returnData()
 
         currenVel = self.currentPose.twist.twist.linear.x
         self.delta_vel_memory.add(currenVel)
-        var_delta_vel = self.delta_vel_memory.var();
         mean_delta_vel = self.delta_vel_memory.mean();
 
         currentdistance = self.clcDistance(self.currentPose.pose.pose.position,self.goalPose.pose.pose.position)
@@ -231,7 +247,6 @@ class robotEnv():
 
         if (self.stepCounter == 1):
             self.closestDistance = currentdistance
-            self.currentRobotSpeed = rospy.get_param("/GETjag"+ str(self.number) + "/current_robot_speed")
 
         EndEpisode = False;
         reward=0
@@ -248,13 +263,9 @@ class robotEnv():
         self.angl_acc = 0
 
         if (self.ic.acceleration_to_high != 0):
-            #print(str(self.number) + "acceleration_to_high")
-            #print("accel z:" + str(self.ic.accelZ))
             self.angl_acc = self.ic.acceleration_to_high
             reward = -self.ic.acceleration_to_high/500
-            #reward = -0.5
-            #EndEpisode = True
-            #print(str(self.number) + "reward: " + str(reward))
+
 
             self.ic.acceleration_to_high = 0
 
@@ -266,22 +277,16 @@ class robotEnv():
             EndEpisode = True
             self.ic.robot_flip_over = False
 
-
-        #if (mean_delta_vel <= 1e-2 and self.number!=1):
-       # if(self.number == 1):
-        #    mean_delta_vel = 1
         if (mean_delta_vel <= 1e-2):
             print("robot_stucked")
             reward = -0.5
             EndEpisode = True
 
         if currentdistance <= self.deltaDist:
-            print(self.currentRobotSpeed)
             print(self.startGoalDistance)
             print(float(self.stepCounter))
 
             reward = 0.5 #+  float((float(20*5.0/self.currentRobotSpeed) / float(self.stepCounter)))
-            #reward = 1
             print("reached Goal")
             EndEpisode = True
 
@@ -295,32 +300,48 @@ class robotEnv():
         reward = np.float32(reward)
 
 
-        if(EndEpisode == True):
-            if(reward >= 0.5):
-                print("reached Goal, agent" + str(self.number) +  ", " + "reward: " + str(reward) + ", steps:" + str(self.stepCounter))
-            print("total_reward: " + str(self.total_reward+ reward))
-
-
         return reward, EndEpisode
 
+    '''
+    stop robot
+    '''
     def stopSteps(self):
         self.ic.startStopRobot.data = False;
         self.ic.stop()
 
+    '''
+    set the episode length
+    @ return true if episode is finished
+    '''
     def startSteps(self):
         self.ic.startStopRobot.data = True;
 
+    '''
+    checks if episode is finished
+    '''
     def is_episode_finished(self):
         return self.episodeFinished
 
+    '''
+    set end of simulation
+    '''
     def endEnv(self):
-        #rospy.set_param("/GETjag/End_of_enviroment",True)
         rospy.set_param("/GETjag"+ str(self.number) + "/End_of_enviroment",True)
 
+    '''
+    return roll pitch yaw orientation from quaternion 
+    @ param action
+    @ return roll pitch yaw orientation
+    '''
     def returnRollPitchYaw(self, orientation):
         orientation_list = [orientation.x, orientation.y, orientation.z, orientation.w]
         return  euler_from_quaternion(orientation_list)
 
+    '''
+    calculate the distance
+    @ param goal pose
+    @ return distance 
+    '''
     def clcDistance(self, start, goal):
         distance = math.sqrt(pow((goal.x),2)+pow((goal.y),2))
         return distance
@@ -330,6 +351,9 @@ class robotEnv():
         self.ic.shoutdown_node();
         sys.exit(0)
 
+'''
+caclulate mean and std
+'''
 class Memory():
     def __init__(self, size):
         self.buffer = deque(maxlen=size)

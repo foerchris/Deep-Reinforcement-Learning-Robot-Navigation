@@ -18,7 +18,8 @@ convertsecs2hms() {
 
 PIDs=()
 WORKERNUMBER="0"
-NUMBEROFWORKERS="4"
+NUMBEROFWORKERS=$1
+echo "NUMBEROFWORKERS arg: $NUMBEROFWORKERS"
 namespace="GETjag"
 tf_prefix="GETjag"
 drlagentStartet="false"
@@ -32,9 +33,15 @@ sighandler_INT() {
    if [[ $REPLY = "j" ]]
    then
       echo "Bye!"
-	  rosnode kill "/GETjag$i/robot_positioning_node"
-	  rosnode kill "/GETjag$i/elevation_mapper_node"
-	  rosnode kill "/GETjag$i/flipper_control_server"
+      
+      while [ $i -lt $((NUMBEROFWORKERS + 1)) ] 
+      do
+		rosnode kill "/GETjag$i/gazebo_random_control_node"
+		rosnode kill "/GETjag$i/elevation_mapper_node"
+		rosnode kill "/GETjag$i/flipper_control_server"
+		i=$((i+1))
+	  done
+ 
 	  kill ${PIDs[@]} >/dev/null 2>&1
 
 	  sleep 0.5
@@ -49,13 +56,14 @@ EPISODCOUNT=0
 
 PIDs+=($!)
 
+
 while [ $CANEXIT -lt 2 ] 
 do
 	truncate -s 0 cheakNotes.txt
 		
 	echo "[$(date +"%T")]: Running elevation_mapper_node"
 	i=1
-	while [ $i -lt 6 ] 
+	while [ $i -lt $((NUMBEROFWORKERS + 1)) ] 
 	do
 		roslaunch elevation_mapper elevation_mapper.launch namespace:="$namespace$i" > /dev/null 2>&1 &		
 		PIDs+=($!)
@@ -65,16 +73,16 @@ do
 		
 	echo "[$(date +"%T")]: Running goal Pose generator/publisher + world creator"
 	i=1
-	while [ $i -lt 6 ] 
+	while [ $i -lt $((NUMBEROFWORKERS + 1)) ] 
 	do  	
-		roslaunch traversability_estimation create_map.launch namespace:="$namespace$i" > /dev/null 2>&1 &
+		roslaunch traversability_estimation gazebo_random_control.launch namespace:="$namespace$i" > /dev/null 2>&1 &
 		PIDs+=($!)
 		i=$((i+1))
 	done
 	sleep 2
 		
 	i=1
-	while [ $i -lt 6 ] 
+	while [ $i -lt $((NUMBEROFWORKERS + 1)) ] 
 	do  	
 		roslaunch flipper_control FlipperControl.launch namespace:="$namespace$i" > /dev/null 2>&1 &
 		PIDs+=($!)
@@ -83,7 +91,7 @@ do
 	
 	echo "[$(date +"%T")]: Ready to Start DRL Agent"
 	i=1
-	while [ $i -lt 6 ] 
+	while [ $i -lt $((NUMBEROFWORKERS + 1)) ] 
 	do
 		rosparam set "/GETjag$i/Ready_to_Start_DRL_Agent" true
 		i=$((i+1))
@@ -94,34 +102,34 @@ do
 	rosnode list >> cheakNotes.txt 
 	sleep 1
 
-	#~ i=1
-	#~ while [ $i -lt 6 ] 
-	#~ do
-		#~ if (grep -q "/GETjag$i/robot_positioning_node" cheakNotes.txt and grep -q "/GETjag$i/elevation_mapper_node" cheakNotes.txt); then
-			#~ CANEXIT=0
-			#~ if ($drlagentStartet -eq "true"); then		
-				#~ if (grep -q "GETjag_drl_gaz_robot_env_wrapper" cheakNotes.txt); then
-					#~ CANEXIT=0
-				#~ else
-					#~ echo -e "[$(date +"%T")]:Error GETjag_drl_gaz_robot_env_wrapper crash somehow will end simulation${NC}"
-					#~ rosparam set "/GETjag$i/Ready_to_Start_DRL_Agent" false
-					#~ CANEXIT=4
-				#~ fi
-			#~ fi		
-		#~ else
-			#~ echo -e "[$(date +"%T")]  Nodes not startet: GETjag$i/robot_positioning_node and /GETjag$i/elevation_mapper_node{NC}"
+	i=1
+	while [ $i -lt $((NUMBEROFWORKERS + 1)) ] 
+	do
+		if (grep -q "/GETjag$i/gazebo_random_control_node" cheakNotes.txt and grep -q "/GETjag$i/elevation_mapper_node" cheakNotes.txt); then
+			CANEXIT=0
+			if ($drlagentStartet -eq "true"); then		
+				if (grep -q "GETjag_drl_gaz_robot_env_wrapper" cheakNotes.txt); then
+					CANEXIT=0
+				else
+					echo -e "[$(date +"%T")]:Error GETjag_drl_gaz_robot_env_wrapper crash somehow will end simulation${NC}"
+					rosparam set "/GETjag$i/Ready_to_Start_DRL_Agent" false
+					CANEXIT=4
+				fi
+			fi		
+		else
+			echo -e "[$(date +"%T")]  Nodes not startet: GETjag$i/gazebo_random_control_node and /GETjag$i/elevation_mapper_node{NC}"
 
-			#~ CANEXIT=1
-		#~ fi	
-		#~ i=$((i+1))
-	#~ done
+			CANEXIT=1
+		fi	
+		i=$((i+1))
+	done
 		
 		
 	#loop
 	while [ $CANEXIT -lt 1 ]; do
 		#ros not started
 		i=1
-		while [ $i -lt 6 ] 
+		while [ $i -lt $((NUMBEROFWORKERS + 1)) ] 
 		do
 			if  ($(rosparam get /GETjag$i/End_of_enviroment)); then
 							
@@ -138,10 +146,11 @@ do
 		done
 	done
 	i=1
-	while [ $i -lt 6 ] 
+	while [ $i -lt $((NUMBEROFWORKERS + 1)) ] 
 	do
-		rosnode kill "/GETjag$i/robot_positioning_node"
+		rosnode kill "/GETjag$i/gazebo_random_control_node"
 		rosnode kill "/GETjag$i/elevation_mapper_node"
+		rosnode kill "/GETjag$i/flipper_control_server"
 		i=$((i+1))
 	done
 done

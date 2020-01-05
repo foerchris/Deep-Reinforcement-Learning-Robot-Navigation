@@ -48,7 +48,11 @@ class robotEnv():
         self.episodeFinished = False
         # Variables to calculate the reward
         self.deltaDist = 0.20
+<<<<<<< HEAD
         self.discountFactorMue = 0.05
+=======
+        self.discountFactorMue = 0.1
+>>>>>>> 2d0b529eb921522d18f25a8f53fd368251413eef
         self.closestDistance = 0
         self.startGoalDistance = 0
         self.lastDistance = 0
@@ -93,18 +97,23 @@ class robotEnv():
         self.cell_states = cell_checker(10.0)
         self.ic.stop()
 
+    '''
+    set the episode length
+    @ param action
+    @ return linear and angular velocity
+    '''
     def set_episode_length(self, EpisodeLength):
         self.EpisodeLength = EpisodeLength
 
-    # Takes a step inside the enviroment according to the proposed action and return the depth image ([x,x] Pixel) the eleviation map ([200,200] Pixel),
-    # orientation (Euler notation [roll, pitch, yaw]) and the archived reward for the new state
+    '''
+    Takes a step inside the enviroment according to the proposed action and return the depth image ([x,x] Pixel) the eleviation map ([200,200] Pixel),
+    orientation (Euler notation [roll, pitch, yaw]) and the archived reward for the new state
+    @ param action; action which should be taken
+    @ return levation map image, depth image, goal pose, reward, end of episode 
+    '''
     def step(self, action):
-        # here the action should be to the robot and the reward should return
-        # überlegen wie ich die zeitverzögerung realisieren will
         # action[0] = abs(action[0])
 
-        # if(self.number ==1):
-        #  print("action:" + str(action))
         lin, angl = self.ic.setAction(action)
         self.delta_set_vel_lin_memory.add(lin);
         self.delta_set_vel_angl_memory.add(angl);
@@ -119,27 +128,15 @@ class robotEnv():
         else:
             self.total_reward += reward
 
-        if(self.number ==1):
-            print("self.total_reward: " + str(self.total_reward))
-
-        # if(self.number == 1):
-        #    print('reward' + str(reward))
-        #    print('total_reward' + str(self.total_reward))
-        # if(action[0] >= 1.0 or action[0] <=  0.05):
-        #    reward += -0.01
-
-        # if(action[1] >= 1.0 or action[1] <= -1.0):
-        #    reward += -0.01
-
-        # if(self.number ==1):
-        #  print("reward:" + str(reward))
-
-        info = {}
         eleviationData, depthData, goalPose = self.get_state()
         self.ic.stop()
 
         return eleviationData, depthData, goalPose, reward, d, info
 
+    '''
+    transform messures to states and return them
+    @ return elevation map image, depth image, goal pose 
+    '''
     def get_state(self):
         depthImage, eleviationImage, self.currentPose, self.goalPose = self.ic.returnData()
 
@@ -159,34 +156,9 @@ class robotEnv():
 
         # norrm input data between -1 and 1
         depthData = np.divide(depthData, 10)
-        #print(np.max(eleviationData[0]))
-        #print(np.max(eleviationData[1]))
-       # eleviationData[0] = np.divide(eleviationData[0], 65536)  # 255
-       # eleviationData[1] = np.divide(eleviationData[1], 65536)  # 255
-        #print(eleviationData[0].shape)
-        #print(eleviationData[1].shape)
 
-        #plt.imshow(eleviationData[0],cmap="gray")
-        #plt.show()
-        #plt.imshow(eleviationData[1],cmap="gray")
-        #plt.show()
-        eleviationData[0] = np.add(eleviationData[0],0.2)
-        eleviationData = np.multiply(eleviationData[0],eleviationData[1])
-        #plt.imshow(eleviationData,cmap="gray")
-        #plt.show()
-       # plt.imshow(eleviationData,cmap="gray")
-       # plt.show()
+        eleviationData = eleviationData[0]
 
-       # eleviationData[0] = np.add(eleviationData[0],0.2)
-       # eleviationData = np.multiply(eleviationData[0],eleviationData[1])
-        #eleviationData = eleviationData[0]
-
-
-       # eleviationData = eleviationData[0]
-        # print("eleviationData.shape: " +str(eleviationData.shape))
-        #if(self.number ==1):
-            #plt.imshow(eleviationData,cmap="gray")
-            #plt.show()
         goalOrientation = np.divide(goalOrientation, math.pi)
         goalPosition = np.divide(goalPosition, self.maxDistanz)
         currentPosition =  np.divide(currentPosition, self.maxDistanz)
@@ -207,17 +179,25 @@ class robotEnv():
 
         return eleviationData, depthData, goalPose
 
+    '''
+    return action size
+    @ return action size
+    '''
     def get_available_actions_size(self):
         return self.availableActionsSize
 
-    # Restet the enviroment and return the depth image ([x,x] Pixel) the eleviation map ([200,200] Pixel) and
-    # orientation (Euler notation [roll, pitch, yaw])of the oberservation in the new enviroment
+    '''
+    Restet the enviroment and return the depth image ([x,x] Pixel) the eleviation map ([200,200] Pixel) and
+    orientation (Euler notation [roll, pitch, yaw])of the oberservation in the new enviroment
+    @ return states
+    '''
     def reset(self):
         # reset the model and replace the robot at a random location
         self.ic.stop()
         valiedEnv = False
         self.ic.clcMean()
         # resest the step counter
+
         self.stepCounter = 0
         # reset the buffer with the velocitys
         self.delta_x_memory.resetBuffer()
@@ -253,6 +233,7 @@ class robotEnv():
             roll, pitch, yaw = self.returnRollPitchYaw(self.currentPose.pose.pose.orientation)
 
             position_q = self.currentPose.pose.pose.position
+
             # cheakk if the roboter is in a valide starting position
             if roll <= math.pi / 4 and roll >= -math.pi / 4 and pitch <= math.pi / 4 and pitch >= -math.pi / 4 and position_q.z < 0.7:
                 valiedEnv = True
@@ -266,11 +247,9 @@ class robotEnv():
                 print("worker_" + str(self.number) + " stucked at cheak for valid state");
 
         sleep(0.2)
-        # print("self.closestDistance " + str(self.number) + ": " + str(self.closestDistance ))
 
         self.startGoalDistance = self.clcDistance(self.goalPose.pose.pose.position)
         self.closestDistance = self.startGoalDistance
-        # print("self.closestDistance " + str(self.number) + ": " + str(self.closestDistance ))
         self.startTime = time.time()
         self.lastTime = self.startTime
 
@@ -283,16 +262,18 @@ class robotEnv():
 
         return self.get_state()
 
+    '''
+    calculate rewards
+    @ return reward and if episode is finished
+    '''
     def clcReward(self):
         depthImage, eleviationImage, self.currentPose, self.goalPose = self.ic.returnData()
         roll, pitch, yaw = self.returnRollPitchYaw(self.currentPose.pose.pose.orientation)
+        if(self.number==1):
+            print("roll" + str(abs(roll)))
+            print("abs(pitch)" + str(abs(pitch)))
 
-        currentX = self.ic.currentRobotPose.pose.pose.position.x
-        currentY = self.ic.currentRobotPose.pose.pose.position.y
-
-        # if(self.number == 1):
-        #   print("currentX" + str(currentX))
-        #  print("currentY" + str(currentY))
+        explor = False
 
         currenVel = self.currentPose.twist.twist.linear.x
 
@@ -306,8 +287,7 @@ class robotEnv():
             exploredNewArea, goalAreaReached = self.cell_states.get_possible_cells(self.ic.currentRobotPose.pose.pose.position, self.goalPose.pose.pose.position)
             if(goalAreaReached):
                 self.newRewards = True
-              #  self.closestDistance = currentdistance
-               # print("goalAreaReached number" + str(self.number) +": " + str(goalAreaReached))
+                self.closestDistance = currentdistance
 
 
 
@@ -318,97 +298,46 @@ class robotEnv():
         self.delta_x_memory.add(self.currentPose.pose.pose.position.x)
         self.delta_y_memory.add(self.currentPose.pose.pose.position.y)
 
+        if(self.number==1):
+            print("abs(currenVel)" + str(abs(currenVel)))
         self.delta_vel_memory.add(abs(currenVel))
-
-        var_delta_x = self.delta_x_memory.var();
-        var_delta_y = self.delta_y_memory.var();
 
         mean_delta_vel = self.delta_vel_memory.mean();
 
         EndEpisode = False;
-       # reward = -0.001
+
         reward = 0
 
         if rospy.get_param("/GETjag" + str(self.number) + "/Error_in_simulator"):
             EndEpisode = True
 
             rospy.set_param("/GETjag" + str(self.number) + "/Error_in_simulator", False)
-        #  if(self.number == 1):
-        # print("self.closestDistance" + str(self.closestDistance))
-        # print("currentdistance" + str(currentdistance))
 
         if currentdistance < self.closestDistance: #and self.newRewards:
 
             reward = self.discountFactorMue * (self.closestDistance - currentdistance)
-            if(self.number ==1):
-                print("reward: " + str(reward))
 
-            #print("currentdistance < self.closestDistance, reward number" + str(self.number) +": " + str(reward))
-
-            #if (reward >= 0.1):
-               # print("self.stepCounter" + str(self.number) + ": " + str(self.stepCounter))
-               # print("self.closestDistance" + str(self.number) + ": " + str(self.closestDistance))
-               # print("currentdistance" + str(self.number) + ": " + str(currentdistance))
-               # print("currentdistance < self.closestDistance reward_" + str(self.number) + ": " + str(reward))
-                # reward = 0;
             self.closestDistance = currentdistance
 
-               # if(self.number ==1):
-     #   if exploredNewArea: #and not self.newRewards:
-      #      reward += 0.06
-            #if(self.number == 1):
-               # print("exploredNewArea, reward: " + str(reward))
-        # if(self.number ==1):
-        #  print("reward" + str(reward))
-      #  elif currentdistance <= self.lastDistance:
-        #   reward = 0.5 + (self.startGoalDistance / currentTime)
-
-        #         explored = (eleviationImage > 100).sum()
-        #         if (explored > self.explored_last):
-        #             self.explored_last = explored
-        #             reward += 8
-        #             if explored< 1000:
-        #                 reward += explored /200
-        #             else:
-        #                 reward += 1
-
-        # if explored< 1000:
-        #    reward += explored /1000
-        # else:
-        #    reward += 1
+        if explor == True:
+            if exploredNewArea: #and not self.newRewards:
+                reward += 0.06
+            elif currentdistance <= self.lastDistance:
+                reward = 0.5 + (self.startGoalDistance / currentTime)
 
         if roll >= math.pi / 4 or roll <= -math.pi / 4 or pitch >= math.pi / 4 or pitch <= -math.pi / 4:
             reward = -0.5
             EndEpisode = True
             self.countResetZeroVel = 0
 
-        # if(self.number == 1):
-        #     print("var_delta_vel" + str(var_delta_vel))
-
-        # if (var_delta_x <= 1e-2 and var_delta_y <= 1e-2):
         if (mean_delta_vel <= 0.015):
-            # if(self.number == 1):
-            # print("mean_delta_vel" + str(mean_delta_vel))
-            # print("self.delta_set_vel_lin_memory Array" + str(self.delta_set_vel_lin_memory.returnNumpyArray()))
-            #  print("self.delta_vel_memory Array" + str(self.delta_vel_memory.returnNumpyArray()))
-
             reward = -0.5
             EndEpisode = True
             self.countResetZeroVel += 1
 
 
-      #  if goalAreaReached:
         if self.ic.reach_the_goal:
-            ##reward = 100
-            #reward = 0.5 + (self.startGoalDistance * 5 / self.stepCounter)
-
-            reward = 0.5  + (self.startGoalDistance * 3 / self.stepCounter)
-
-            print( float(self.stepCounter)/ float(self.EpisodeLength))
-            #if(self.stepCounter==400):
-             #   reward = 0.5
-           # else:
-            #    reward = 0.5 + (1.0 - float(self.stepCounter)/ float(400))
+            reward = 0.5  + (self.startGoalDistance * 10 / self.stepCounter)
 
             print("reached Goal, reward: " + str(reward) + ", stepCounter: " + str(self.stepCounter) + ", EpisodeLength: " + str(self.EpisodeLength))
             EndEpisode = True
@@ -426,40 +355,53 @@ class robotEnv():
             file = open("Gazebo Script/output_gazebo.txt", "w")
             file.write("Unable to set value")
             file.close()
-        # print("current reward: " + str(reward))
-        # reward = reward*0.01
-        # reward = reward*0.001
-        # if(self.number == 1):
-        # print("reward for step: " + str(reward))
+
         self.lastDistance = currentdistance
         self.lastTime = currentTime
 
         self.episodeFinished = EndEpisode
         reward = np.float32(reward)
-        # print("reward" + str(reward))
+
         if (EndEpisode):
             self.explored_last = 0
         return reward, EndEpisode
 
+    '''
+    stop robot
+    '''
     def stopSteps(self):
         self.ic.stop()
 
+    '''
+    set the episode length
+    @ return true if episode is finished
+    '''
     def is_episode_finished(self):
         return self.episodeFinished
 
+    '''
+    set end of simulation
+    '''
     def endEnv(self):
-        # rospy.set_param("/GETjag/End_of_enviroment",True)
         rospy.set_param("/GETjag" + str(self.number) + "/End_of_enviroment", True)
 
+    '''
+    calculate roll pitch yaw from x y z
+    @ param goalPose; goal pose
+    @ return roll pitch yaw angles
+    '''
     def clcRPYGoalPose(self, goalPose):
-        # roll = self.clcAngle(goalPose.x,goalPose.z)
-        # pitch = self.clcAngle(goalPose.y,goalPose.z)
         yaw = self.clcAngle(goalPose.x, goalPose.y)
         roll = math.atan(goalPose.z / goalPose.x)
         pitch = math.atan(goalPose.z / goalPose.y)
-        # yaw =math.atan(goalPose.y/goalPose.x)
         return roll, pitch, yaw
 
+    '''
+    calculate yaw angle
+    @ param v1; x
+    @ param v2; y
+    @ return angle
+    '''
     def clcAngle(self, v1, v2):
         if (v1 > 0):
             return math.atan(v2 / v1)
@@ -474,23 +416,41 @@ class robotEnv():
         else:
             return -math.pi / 2
 
+    '''
+    return roll pitch yaw orientation from quaternion 
+    @ param action
+    @ return roll pitch yaw orientation
+    '''
     def returnRollPitchYaw(self, orientation):
         orientation_list = [orientation.x, orientation.y, orientation.z, orientation.w]
         return euler_from_quaternion(orientation_list)
 
-    def return_times_reached_goal(self, start, goal):
+    '''
+    return episode and numbers goal reached
+    @ return number of episodes and number of goal reached 
+    '''
+    def return_times_reached_goal(self):
         return self.number_of_epsiodes, self.number_reached_goal
 
+    '''
+    calculate the distance
+    @ param goal pose
+    @ return distance 
+    '''
     def clcDistance(self, goal):
         distance = math.sqrt(pow((goal.x), 2) + pow((goal.y), 2))
         return distance
+
 
     def signal_handler(self, sig, frame):
         print('You pressed Ctrl+C!')
         self.ic.shoutdown_node();
         sys.exit(0)
 
-
+'''
+checks if an unvisited cell was visited
+'''
+# cheaks zells for exploring areas
 class cell_checker():
     def __init__(self, size):
         self.valueX = []
@@ -522,6 +482,9 @@ class cell_checker():
                 self.valueY.append(y - self.env_size / 2.0)
 
 
+'''
+caclulate mean and std
+'''
 class Memory():
     def __init__(self, size):
         self.buffer = deque(maxlen=size)

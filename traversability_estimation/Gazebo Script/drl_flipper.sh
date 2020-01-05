@@ -18,7 +18,8 @@ convertsecs2hms() {
 
 PIDs=()
 WORKERNUMBER="0"
-NUMBEROFWORKERS="4"
+NUMBEROFWORKERS=$1
+echo "NUMBEROFWORKERS arg: $NUMBEROFWORKERS"
 namespace="GETjag"
 tf_prefix="GETjag"
 drlagentStartet="false"
@@ -32,9 +33,14 @@ sighandler_INT() {
    if [[ $REPLY = "j" ]]
    then
       echo "Bye!"
-	  rosnode kill "/GETjag$i/robot_positioning_node"
-	  rosnode kill "/GETjag$i/elevation_mapper_node"
-	  rosnode kill "/GETjag$i/flipper_control_server"
+	  while [ $i -lt $((NUMBEROFWORKERS + 1)) ] 
+      do
+		rosnode kill "/GETjag$i/gazebo_control_node"
+		rosnode kill "/GETjag$i/elevation_mapper_node"
+		rosnode kill "/GETjag$i/flipper_control_server"
+		i=$((i+1))
+	  done
+ 
 	  kill ${PIDs[@]} >/dev/null 2>&1
 
 	  sleep 0.5
@@ -55,7 +61,7 @@ do
 		
 	echo "[$(date +"%T")]: Running elevation_mapper_node"
 	i=1
-	while [ $i -lt 6 ] 
+	while [ $i -lt $((NUMBEROFWORKERS + 1)) ] 
 	do
 		roslaunch elevation_mapper elevation_mapper.launch namespace:="$namespace$i" > /dev/null 2>&1 &		
 		PIDs+=($!)
@@ -65,7 +71,7 @@ do
 
 	echo "[$(date +"%T")]: Running goal Pose generator/publisher + world creator"
 	i=1
-	while [ $i -lt 6 ]
+	while [ $i -lt $((NUMBEROFWORKERS + 1)) ]
 	do
 		roslaunch traversability_estimation gazebo_control.launch namespace:="$namespace$i" > /dev/null 2>&1 &
 		PIDs+=($!)
@@ -75,7 +81,7 @@ do
 
 	echo "[$(date +"%T")]: Drive to goal Pose node"
 	i=1
-	while [ $i -lt 6 ] 
+	while [ $i -lt $((NUMBEROFWORKERS + 1)) ] 
 	do  	
 		roslaunch robot_navigation auto_robot_navigation.launch namespace:="$namespace$i" > /dev/null 2>&1 &
 		PIDs+=($!)
@@ -84,16 +90,16 @@ do
 	sleep 2
 		
 	i=1
-	while [ $i -lt 6 ]
+	while [ $i -lt $((NUMBEROFWORKERS + 1)) ]
 	do
-		roslaunch flipper_control FlipperControl.launch namespace:="$namespace$i" > /dev/null 2>&1 &
+		#roslaunch flipper_control FlipperControl.launch namespace:="$namespace$i" > /dev/null 2>&1 &
 		PIDs+=($!)
 		i=$((i+1))
 	done
 	
 	echo "[$(date +"%T")]: Ready to Start DRL Agent"
 	i=1
-	while [ $i -lt 6 ] 
+	while [ $i -lt $((NUMBEROFWORKERS + 1)) ] 
 	do
 		rosparam set "/GETjag$i/Ready_to_Start_DRL_Agent" true
 		i=$((i+1))
@@ -105,7 +111,7 @@ do
 	sleep 1
 
 	i=1
-	while [ $i -lt 6 ] 
+	while [ $i -lt $((NUMBEROFWORKERS + 1)) ] 
 	do
 		if (grep -q "/GETjag$i/auto_robot_navigation_server" cheakNotes.txt and grep -q "/GETjag$i/elevation_mapper_node" cheakNotes.txt and grep -q "/GETjag$i/gazebo_control_node" cheakNotes.txt); then
 			CANEXIT=0
@@ -131,7 +137,7 @@ do
 	while [ $CANEXIT -lt 1 ]; do
 		#ros not started
 		i=1
-		while [ $i -lt 6 ] 
+		while [ $i -lt $((NUMBEROFWORKERS + 1)) ] 
 		do
 			if  ($(rosparam get /GETjag$i/End_of_enviroment)); then
 							
@@ -148,10 +154,12 @@ do
 		done
 	done
 	i=1
-	while [ $i -lt 6 ] 
+	while [ $i -lt $((NUMBEROFWORKERS + 1)) ] 
 	do
-		rosnode kill "/GETjag$i/robot_positioning_node"
+		rosnode kill "/GETjag$i/gazebo_control_node"
 		rosnode kill "/GETjag$i/elevation_mapper_node"
+		rosnode kill "/GETjag$i/flipper_control_server"
+
 		i=$((i+1))
 	done
 done

@@ -23,7 +23,8 @@ sleep 3
 echo "[$(date +"%T")]: start Loop"
 PIDs=()
 WORKERNUMBER="0"
-NUMBEROFWORKERS="4"
+NUMBEROFWORKERS=$1
+echo "NUMBEROFWORKERS arg: $NUMBEROFWORKERS"
 namespace="GETjag"
 tf_prefix="GETjag"
 world="DrlFlipper5RobotsV1.world"
@@ -63,13 +64,15 @@ EPISODCOUNT=0
 rosparam set "/Gazebo/simulator_ready" false
 
 i=1
-while [ $i -lt 5 ]
+while [ $i -lt $((NUMBEROFWORKERS + 1)) ]
 do
 	rosparam set "/GETjag$i/End_of_episode" false
 	rosparam set "/GETjag$i/End_of_enviroment" false
 	rosparam set "/GETjag$i/Error_in_simulator" false
 	rosparam set "/GETjag$i/Ready_to_Start_DRL_Agent" false
 	rosparam set "/GETjag$i/worker_ready" True
+	rosparam set "/GETjag$i/current_robot_speed" 0.5
+
 	i=$((i+1))
 done
 
@@ -80,10 +83,15 @@ do
 	CANEXIT=0
 	#reset watchdog
 	echo -e "[$(date +"%T")]: ${GREEN}Starting gazebo with world: ${NC}$world"
-	roslaunch get_gazebo_worlds getjagFlipper4.launch world:=$world gui:=$simulator > output_gazebo.txt 2>&1 &
+	roslaunch get_gazebo_worlds getjagFlipper${NUMBEROFWORKERS}.launch world:=$world gui:=$simulator > output_gazebo.txt 2>&1 &
 	PIDs+=($!)
 	sleep 10
-	STARTTIME=$(date +%s.%N)
+	if (grep -q "is neither a launch file in package" output_gazebo.txt); then
+		echo -e "getjagFlipper${NUMBEROFWORKERS}.launch is not defined"
+		CANEXIT=4
+	fi
+
+	STARTTIME=$(date +%s.%N)	
 	rosparam set "/Gazebo/simulator_ready" true
 	pkill gzclient >/dev/null 2>&1
 	PIDs+=($!)
@@ -97,7 +105,7 @@ do
 	while [ $CANEXIT -lt 1 ]; do
 		#ros not started
 		i=1
-		while [ $i -lt 5 ]
+		while [ $i -lt $((NUMBEROFWORKERS + 1)) ]
 		do
 			if (grep -q "Unable to set value" output_gazebo.txt); then
 

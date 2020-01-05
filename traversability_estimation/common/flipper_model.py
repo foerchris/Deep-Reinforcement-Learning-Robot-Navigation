@@ -143,18 +143,22 @@ class ActorCritic(nn.Module):
         super(ActorCritic, self).__init__()
 
         self.critic = nn.Sequential(
+            #nn.Linear(hidden_size, hidden_size),
             nn.Linear(hidden_size, hidden_size/2),
             nn.ReLU(),
             nn.Linear(hidden_size/2, hidden_size/2),
             nn.ReLU(),
+            #nn.Linear(hidden_size, 1)
             nn.Linear(hidden_size/2, 1)
         )
 
         self.actor = nn.Sequential(
+            #nn.Linear(hidden_size, hidden_size),
             nn.Linear(hidden_size, hidden_size/2),
             nn.ReLU(),
             nn.Linear(hidden_size/2, hidden_size/2),
             nn.ReLU(),
+            #nn.Linear(hidden_size, num_outputs),
             nn.Linear(hidden_size/2, num_outputs),
             nn.Tanh()
         )

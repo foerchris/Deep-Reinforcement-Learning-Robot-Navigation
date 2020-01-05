@@ -23,10 +23,11 @@ sleep 3
 echo "[$(date +"%T")]: start Loop"
 PIDs=()
 WORKERNUMBER="0"
-NUMBEROFWORKERS="4"
+NUMBEROFWORKERS=$1
+echo "NUMBEROFWORKERS arg: $NUMBEROFWORKERS"
 namespace="GETjag"
 tf_prefix="GETjag"
-world="DrlTestWorld6Robots.world"
+world="DrlWorld5RobotsWithObjects.world"
 simulator="false"
 startdrlagent="false"
 drlagentStartet="false"
@@ -49,7 +50,7 @@ sighandler_INT() {
 	  kill $roscore_PID > /dev/null
 	  pkill -9 roscore
 	  pkill -9 rosmaster
-	  
+
 	  sleep 0.5
       exit 0;
    fi
@@ -63,71 +64,80 @@ EPISODCOUNT=0
 rosparam set "/Gazebo/simulator_ready" false
 
 i=1
-while [ $i -lt 7 ] 
-do  	
+while [ $i -lt  $((NUMBEROFWORKERS + 1)) ]
+do
 	rosparam set "/GETjag$i/End_of_episode" false
-	rosparam set "/GETjag$i/End_of_enviroment" false 
+	rosparam set "/GETjag$i/End_of_enviroment" false
 	rosparam set "/GETjag$i/Error_in_simulator" false
 	rosparam set "/GETjag$i/Ready_to_Start_DRL_Agent" false
 	rosparam set "/GETjag$i/worker_ready" True
+	echo "i: $i"
 	i=$((i+1))
 done
 
-while [ $CANEXIT -lt 4 ] 
+while [ $CANEXIT -lt 4 ]
 do
+	#mycmd=($NUMBEROFWORKERS)
 
 	truncate -s 0 output.txt
-	CANEXIT=0 
+	CANEXIT=0
 	#reset watchdog
 	echo -e "[$(date +"%T")]: ${GREEN}Starting gazebo with world: ${NC}$world"
-	roslaunch get_gazebo_worlds getjag6.launch world:=$world gui:=$simulator > output_gazebo.txt 2>&1 &
+	roslaunch get_gazebo_worlds getjag${NUMBEROFWORKERS}.launch world:=$world gui:=$simulator > output_gazebo.txt 2>&1 &
 	PIDs+=($!)
 	sleep 10
+	if (grep -q "is neither a launch file in package" output_gazebo.txt); then
+		echo -e "getjag${NUMBEROFWORKERS}.launch is not defined"
+		CANEXIT=4
+	fi
 	STARTTIME=$(date +%s.%N)
 	rosparam set "/Gazebo/simulator_ready" true
 	pkill gzclient >/dev/null 2>&1
 	PIDs+=($!)
-	if ($simulator -eq "true"); then		
-		roslaunch get_gazebo_worlds gzclient.launch gui:="true" > /dev/null 2>&1 &
+	if ($simulator -eq "true"); then
+		roslaunch  get_gazebo_worlds gzclient.launch gui:="true" > /dev/null 2>&1 &
 		PIDs+=($!)
 		sleep 1
 	fi
-		
+
 	#loop
 	while [ $CANEXIT -lt 1 ]; do
 		#ros not started
 		i=1
-		while [ $i -lt 7 ] 
+		while [ $i -lt  $((NUMBEROFWORKERS + 1)) ]
 		do
 			if (grep -q "Unable to set value" output_gazebo.txt); then
-			
+
 				rosparam set "/GETjag$i/Error_in_simulator" true
 				rosparam set "/GETjag$i/Ready_to_Start_DRL_Agent" false
 
-				echo -e "[$(date +"%T")] Error in simulator${NC}"
+				echo -e "[$(date +"%T")] Error in simulator${NC} Unable to set value "
 				i=5
 				CANEXIT=3
 				PIDs+=($!)
-			
+				sleep 0.5
+
 			elif (grep -q "Segmentation fault" output_gazebo.txt); then
-			
+
 				rosparam set "/GETjag$i/Error_in_simulator" true
 				rosparam set "/GETjag$i/Ready_to_Start_DRL_Agent" false
 
-				echo -e "[$(date +"%T")] Error in simulator${NC}"
+				echo -e "[$(date +"%T")] Error in simulator${NC}: Segmentation fault"
 				i=5
 				CANEXIT=3
 				PIDs+=($!)
-				
+				sleep 0.5
+
 			elif  ($(rosparam get /GETjag$i/End_of_enviroment)); then
-							
+
 				echo -e "[$(date +"%T")]: End reached, close the enviroment${NC}!"
 				CANEXIT=4
 				i=5
-			
+
 			else
 				sleep 0.5
 			fi
+			
 			i=$((i+1))
 		done
 	done
@@ -135,7 +145,7 @@ do
 	RUNTIME=$(convertsecs2hms $(echo "$ENDTIME - $STARTTIME" | bc))
 	echo -e "[$(date +"%T")]: ${CYAN}Simulation on world: ${NC}$world ${CYAN}with #: ${NC}$NUMBEROFITERATIONS ${CYAN}took: ${NC}$RUNTIME seconds"
 	echo "[$(date +"%T")]: Killing: ${PIDs[@]}"
-	
+
     #rosnode kill drl_gaz_robot_env_wrapper
 	kill ${PIDs[@]} >/dev/null 2>&1
 	pkill gzserver >/dev/null 2>&1
@@ -147,3 +157,5 @@ do
 done
 echo "[$(date +"%T")]: killing Ros"
 kill $roscore_PID > /dev/null
+
+
